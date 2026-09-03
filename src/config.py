@@ -30,6 +30,7 @@ WEIGHT_DECAY = float(os.getenv("WEIGHT_DECAY", "1e-4"))
 MAX_GRAD_NORM = float(os.getenv("MAX_GRAD_NORM", "1.0"))
 NUM_WORKERS = int(os.getenv("NUM_WORKERS", "4"))
 DROPOUT = float(os.getenv("DROPOUT", "0.1"))
+BEAM_SIZE = int(os.getenv("BEAM_SIZE", "5"))
 
 SAVE_LAST_CHECKPOINT_DIR = os.getenv("SAVE_LAST_CHECKPOINT_DIR")
 SAVE_BEST_CHECKPOINT_DIR = os.getenv("SAVE_BEST_CHECKPOINT_DIR")

@@ -43,7 +43,13 @@ def build_split_dataframes(dataset_path: Path) -> tuple[pd.DataFrame, pd.DataFra
 
     train_df = images_df[images_df["split"].isin(["train", "restval"])].reset_index(drop=True)
     val_df = images_df[images_df["split"] == "val"].reset_index(drop=True)
-    test_df = images_df[images_df["split"] == "test"].reset_index(drop=True)
+    # test set: one row per unique image, all 5 reference captions collected for scoring
+    test_raw = images_df[images_df["split"] == "test"]
+    test_df = (
+        test_raw.groupby(["imgid", "filepath", "filename", "split"], sort=False)
+        .agg(all_tokens=("tokens", list), all_raws=("raw", list))
+        .reset_index()
+    )
     return train_df, val_df, test_df
 
 

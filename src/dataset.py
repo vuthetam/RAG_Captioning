@@ -57,3 +57,29 @@ class MSCOCODataset(Dataset):
         attention_mask = torch.tensor(attention_mask, dtype=torch.long)
 
         return image, input_ids, attention_mask
+
+class ImageOnlyDataset(Dataset):
+    def __init__(
+        self,
+        df,
+        images_dir: str | Path | None = None,
+        transform=None,
+    ) -> None:
+        self.df = df.reset_index(drop=True)
+        self.images_dir = Path(images_dir) if images_dir is not None else Path(IMAGES_PATH)
+        self.transform = transform or create_clip_transform()
+
+    def __len__(self) -> int:
+        return len(self.df)
+
+    def _get_image_path(self, row) -> Path:
+        return self.images_dir / row["filepath"] / row["filename"]
+
+    def __getitem__(self, idx: int):
+        row = self.df.iloc[idx]
+        image_path = self._get_image_path(row)
+
+        with Image.open(image_path) as img:
+            image = self.transform(img.convert("RGB"))
+
+        return image, row["imgid"]
