@@ -48,6 +48,7 @@ VOCAB_PATH = ARTIFACTS_DIR / "vocab.json"
 TRAIN_DF_PATH = ARTIFACTS_DIR / "train_df.parquet"
 VAL_DF_PATH = ARTIFACTS_DIR / "val_df.parquet"
 TEST_DF_PATH = ARTIFACTS_DIR / "test_df.parquet"
+PREDICTIONS_PATH = ARTIFACTS_DIR / "predictions.json"
 
 ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
 
