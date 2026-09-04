@@ -20,7 +20,7 @@ IMAGES_PATH = Path(
 FREQ_THRESHOLD = int(os.getenv("FREQ_THRESHOLD", "5"))
 DMODEL = int(os.getenv("DMODEL", "512"))
 NHEADS = int(os.getenv("NHEADS", "8"))
-NLAYERS = int(os.getenv("NLAYERS", "1"))
+NLAYERS = int(os.getenv("NLAYERS", "4"))
 BATCH_SIZE = int(os.getenv("BATCH_SIZE", "32"))
 
 NUM_EPOCHS = int(os.getenv("NUM_EPOCHS", "10"))
@@ -32,10 +32,19 @@ NUM_WORKERS = int(os.getenv("NUM_WORKERS", "4"))
 DROPOUT = float(os.getenv("DROPOUT", "0.1"))
 BEAM_SIZE = int(os.getenv("BEAM_SIZE", "5"))
 
-SAVE_LAST_CHECKPOINT_DIR = os.getenv("SAVE_LAST_CHECKPOINT_DIR")
-SAVE_BEST_CHECKPOINT_DIR = os.getenv("SAVE_BEST_CHECKPOINT_DIR")
-LOAD_LAST_CHECKPOINT_DIR = os.getenv("LOAD_LAST_CHECKPOINT_DIR")
-LOAD_BEST_CHECKPOINT_DIR = os.getenv("LOAD_BEST_CHECKPOINT_DIR")
+# Thêm cờ để phân biệt đang chạy Baseline hay RAG
+RUN_MODE = os.getenv("RUN_MODE", "baseline")  # 'baseline' hoặc 'rag'
+
+# Tự động chia nhánh Checkpoint theo RUN_MODE
+_save_last = os.getenv("SAVE_LAST_CHECKPOINT_DIR")
+_save_best = os.getenv("SAVE_BEST_CHECKPOINT_DIR")
+_load_last = os.getenv("LOAD_LAST_CHECKPOINT_DIR")
+_load_best = os.getenv("LOAD_BEST_CHECKPOINT_DIR")
+
+SAVE_LAST_CHECKPOINT_DIR = str(Path(_save_last) / RUN_MODE) if _save_last else None
+SAVE_BEST_CHECKPOINT_DIR = str(Path(_save_best) / RUN_MODE) if _save_best else None
+LOAD_LAST_CHECKPOINT_DIR = str(Path(_load_last) / RUN_MODE) if _load_last else None
+LOAD_BEST_CHECKPOINT_DIR = str(Path(_load_best) / RUN_MODE) if _load_best else None
 
 if SAVE_LAST_CHECKPOINT_DIR:
     os.makedirs(SAVE_LAST_CHECKPOINT_DIR, exist_ok=True)
@@ -48,7 +57,6 @@ VOCAB_PATH = ARTIFACTS_DIR / "vocab.json"
 TRAIN_DF_PATH = ARTIFACTS_DIR / "train_df.parquet"
 VAL_DF_PATH = ARTIFACTS_DIR / "val_df.parquet"
 TEST_DF_PATH = ARTIFACTS_DIR / "test_df.parquet"
-PREDICTIONS_PATH = ARTIFACTS_DIR / "predictions.json"
 
 ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -64,3 +72,15 @@ LOAD_LAST_CHECKPOINT_PATH = (
 LOAD_BEST_CHECKPOINT_PATH = (
     Path(LOAD_BEST_CHECKPOINT_DIR) / "best_checkpoint.pth" if LOAD_BEST_CHECKPOINT_DIR else None
 )
+
+
+# Cấu hình cho Knowledge Base / Retrieval
+KB_MODEL_ID = "openai/clip-vit-large-patch14-336"
+
+
+KB_DIR = ARTIFACTS_DIR / "kb"
+KB_DIR.mkdir(parents=True, exist_ok=True)
+
+KB_FAISS_INDEX_PATH = KB_DIR / "kb_text_index.faiss"
+KB_METADATA_PATH = KB_DIR / "kb_metadata.parquet"
+

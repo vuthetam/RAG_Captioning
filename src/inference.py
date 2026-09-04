@@ -109,8 +109,7 @@ def beam_search(
 
 @torch.no_grad()
 def generate_captions(
-    encoder: nn.Module,
-    decoder: nn.Module,
+    model: nn.Module,
     dataloader: Iterable,
     vocab: Vocabulary,
     beam_size: int,
@@ -136,8 +135,7 @@ def generate_captions(
         in dataset order.
         On other processes: empty list.
     """
-    encoder.eval()
-    decoder.eval()
+    model.eval()
 
     all_captions: list[list[str]] = []
     iterator = tqdm(dataloader, disable=not show_progress, leave=False, desc="Generating")
@@ -146,11 +144,11 @@ def generate_captions(
         images = images.to(accelerator.device)
 
         # Encode first — extend here with retrieval context if needed
-        memory = encoder(images)                             # (B, S, D)
+        memory = model.encode_image(images)                             # (B, S, D)
 
         # Beam search on this process's shard
         sequences = beam_search(
-            decoder, memory, vocab, beam_size, max_length, length_penalty
+            model.decoder, memory, vocab, beam_size, max_length, length_penalty
         )                                                    # (B_local, max_length)
 
         # Gather across all processes, stripping dummy samples from the last batch

@@ -1,12 +1,9 @@
 from pathlib import Path
-
 import torch
-
 
 def save_checkpoint(
     path: str | Path,
-    encoder,
-    decoder,
+    model,
     optimizer,
     epoch: int,
     train_loss: float,
@@ -17,18 +14,15 @@ def save_checkpoint(
     path.parent.mkdir(parents=True, exist_ok=True)
 
     if accelerator is not None:
-        encoder_state_dict = accelerator.get_state_dict(encoder)
-        decoder_state_dict = accelerator.get_state_dict(decoder)
+        model_state_dict = accelerator.get_state_dict(model)
     else:
-        encoder_state_dict = encoder.state_dict()
-        decoder_state_dict = decoder.state_dict()
+        model_state_dict = model.state_dict()
 
     checkpoint_state = {
         "epoch": int(epoch),
         "train_loss": float(train_loss),
         "best_val_loss": float(best_val_loss),
-        "encoder_state_dict": encoder_state_dict,
-        "decoder_state_dict": decoder_state_dict,
+        "model_state_dict": model_state_dict,
         "optimizer_state_dict": optimizer.state_dict() if optimizer is not None else None,
     }
 
@@ -38,15 +32,18 @@ def save_checkpoint(
 
 def load_checkpoint(
     path: str | Path,
-    encoder,
-    decoder,
+    model,
     optimizer=None,
     device: str | torch.device = "cpu",
 ):
-    checkpoint = torch.load(Path(path), map_location=device)
+    checkpoint = torch.load(Path(path), map_location=device, weights_only=True)
 
-    encoder.load_state_dict(checkpoint["encoder_state_dict"])
-    decoder.load_state_dict(checkpoint["decoder_state_dict"])
+    # Backward compatibility for old checkpoints (encoder_state_dict, decoder_state_dict)
+    if "encoder_state_dict" in checkpoint and "decoder_state_dict" in checkpoint:
+        model.encoder.load_state_dict(checkpoint["encoder_state_dict"])
+        model.decoder.load_state_dict(checkpoint["decoder_state_dict"])
+    else:
+        model.load_state_dict(checkpoint["model_state_dict"])
 
     if optimizer is not None and checkpoint.get("optimizer_state_dict") is not None:
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])

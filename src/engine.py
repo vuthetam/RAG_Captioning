@@ -11,24 +11,16 @@ from src.utils import trainable_parameters
 
 
 def _step(
-    encoder: nn.Module,
-    decoder: nn.Module,
+    model: nn.Module,
     images: torch.Tensor,
     input_ids: torch.Tensor,
     attention_mask: torch.Tensor,
     pad_idx: int,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-    memory = encoder(images)
-
-    decoder_input_ids = input_ids[:, :-1]
-    decoder_attention_mask = attention_mask[:, :-1]
     target_ids = input_ids[:, 1:]
-
-    logits = decoder(
-        input_ids=decoder_input_ids,
-        memory=memory,
-        attention_mask=decoder_attention_mask,
-    )
+    
+    # Giao phó toàn bộ quá trình cắt chuỗi, extract feature cho model
+    logits = model(images, input_ids, attention_mask)
 
     loss_sum = nn.functional.cross_entropy(
         logits.reshape(-1, logits.size(-1)),
@@ -42,8 +34,7 @@ def _step(
 
 
 def train_one_epoch(
-    encoder: nn.Module,
-    decoder: nn.Module,
+    model: nn.Module,
     dataloader: Iterable,
     optimizer: torch.optim.Optimizer,
     pad_idx: int,
@@ -51,8 +42,7 @@ def train_one_epoch(
     max_grad_norm: float = 1.0,
     show_progress: bool = False,
 ) -> float:
-    encoder.train()
-    decoder.train()
+    model.train()
 
     total_loss = 0.0
     total_tokens = 0
@@ -65,11 +55,11 @@ def train_one_epoch(
 
         optimizer.zero_grad(set_to_none=True)
         with accelerator.autocast():
-            _, loss_sum, num_tokens = _step(encoder, decoder, images, input_ids, attention_mask, pad_idx)
+            _, loss_sum, num_tokens = _step(model, images, input_ids, attention_mask, pad_idx)
 
         accelerator.backward(loss_sum)
         accelerator.clip_grad_norm_(
-            trainable_parameters(encoder, decoder),
+            trainable_parameters(model),
             max_grad_norm,
         )
 
@@ -87,15 +77,13 @@ def train_one_epoch(
 
 @torch.no_grad()
 def evaluate_one_epoch(
-    encoder: nn.Module,
-    decoder: nn.Module,
+    model: nn.Module,
     dataloader: Iterable,
     pad_idx: int,
     accelerator: Accelerator,
     show_progress: bool = False,
 ) -> float:
-    encoder.eval()
-    decoder.eval()
+    model.eval()
 
     total_loss = 0.0
     total_tokens = 0
@@ -107,7 +95,7 @@ def evaluate_one_epoch(
         attention_mask = attention_mask.to(accelerator.device)
 
         with accelerator.autocast():
-            _, loss_sum, num_tokens = _step(encoder, decoder, images, input_ids, attention_mask, pad_idx)
+            _, loss_sum, num_tokens = _step(model, images, input_ids, attention_mask, pad_idx)
 
         reduced_loss = accelerator.reduce(loss_sum.detach(), reduction="sum")
         reduced_tokens = accelerator.reduce(num_tokens.detach(), reduction="sum")

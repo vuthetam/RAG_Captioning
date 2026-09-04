@@ -28,7 +28,7 @@ class TransformerCaptionDecoder(nn.Module):
         nhead: int = NHEADS,
         num_layers: int = NLAYERS,
         dropout: float = 0.1,
-        max_length: int = 100,
+        max_length: int = 40,
         pad_idx: int = 0,
     ) -> None:
         super().__init__()
