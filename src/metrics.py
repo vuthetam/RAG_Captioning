@@ -23,9 +23,9 @@ def compute_metrics(predictions_path: str | Path, test_df_path: str | Path) -> d
     res_raw = {}
     gts_raw = {}
 
-    # Format cho PTBTokenizer: dict {image_id: [{'caption': "..."}]}
+    # Format cho PTBTokenizer: dict {imgid: [{'caption': "..."}]}
     for p in preds_list:
-        imgid = int(p["image_id"])
+        imgid = int(p["imgid"])
         res_raw[imgid] = [{"caption": p["caption"]}]
 
     for _, row in test_df.iterrows():

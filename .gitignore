@@ -3,3 +3,4 @@ checkpoints
 **/__pycache__
 .env
 test.ipynb
+artifacts

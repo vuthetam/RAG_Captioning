@@ -20,7 +20,7 @@ def main():
 
     # 1. Load CLIP Model
     print(f"Loading CLIP model ({KB_MODEL_ID})...")
-    model = CLIPModel.from_pretrained(KB_MODEL_ID).to(device)
+    model = CLIPModel.from_pretrained(KB_MODEL_ID, torch_dtype=torch.float16).to(device)
     processor = CLIPProcessor.from_pretrained(KB_MODEL_ID)
     model.eval()
 
@@ -34,7 +34,7 @@ def main():
     
     # Chỉ giữ lại các cột cần thiết cho Metadata
     metadata_df = train_df[['imgid', 'filepath', 'filename', cap_col]].copy()
-    metadata_df.rename(columns={'imgid': 'image_id', cap_col: 'caption'}, inplace=True)
+    metadata_df.rename(columns={cap_col: 'caption'}, inplace=True)
     
     print(f"Tổng số caption cần mã hóa: {len(metadata_df):,}")
 
