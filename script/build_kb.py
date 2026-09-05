@@ -21,12 +21,12 @@ def main():
 
     # 1. Load CLIP Model
     print(f"Loading CLIP model ({KB_MODEL_ID})...")
-    model = CLIPModel.from_pretrained(KB_MODEL_ID, torch_dtype=torch.float16).to(device)
+    model_kwargs = {"torch_dtype": torch.float16} if device == "cuda" else {}
+    model = CLIPModel.from_pretrained(KB_MODEL_ID, **model_kwargs).to(device)
     processor = CLIPProcessor.from_pretrained(KB_MODEL_ID)
     model.eval()
 
-
-    # 3. Đọc tập Train và lọc lấy các cột cần thiết cho Metadata
+    # 2. Đọc tập Train và lọc lấy các cột cần thiết cho Metadata
     print("Đọc tập train_df...")
     train_df = pd.read_parquet(TRAIN_DF_PATH)
     
@@ -39,12 +39,12 @@ def main():
     
     print(f"Tổng số caption cần mã hóa: {len(metadata_df):,}")
 
-    # 4. Khởi tạo FAISS Index
+    # 3. Khởi tạo FAISS Index
     # CLIP large có dimension = 768. IndexFlatIP dùng cho Cosine Similarity.
-    d = model.config.text_config.hidden_size # Tự động lấy số chiều (768 với ViT-L)
+    d = model.config.projection_dim
     index = faiss.IndexFlatIP(d)
 
-    # 5. Rút trích Vector theo Batch
+    # 4. Rút trích Vector theo Batch
     batch_size = 512
     captions = metadata_df['caption'].tolist()
     
@@ -67,7 +67,7 @@ def main():
             embeddings_np = text_features.cpu().numpy().astype('float32')
             index.add(embeddings_np)
 
-    # 6. Lưu file xuống ổ cứng
+    # 5. Lưu file xuống ổ cứng
     print("\nĐang lưu Knowledge Base xuống đĩa...")
     faiss.write_index(index, str(KB_FAISS_INDEX_PATH))
     metadata_df.to_parquet(KB_METADATA_PATH)
