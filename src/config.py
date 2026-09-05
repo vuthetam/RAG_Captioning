@@ -47,15 +47,15 @@ KB_DIR.mkdir(parents=True, exist_ok=True)
 KB_FAISS_INDEX_PATH = KB_DIR / "kb_text_index.faiss"
 KB_METADATA_PATH = KB_DIR / "kb_metadata.parquet"
 
-# RAG Features
-RAG_FEATURES_DIR = ARTIFACTS_DIR / "rag_features"
-RAG_FEATURES_DIR.mkdir(parents=True, exist_ok=True)
-TRAIN_VISUAL_FEATURES_PATH = RAG_FEATURES_DIR / "train_visual_features.h5"
-VAL_VISUAL_FEATURES_PATH = RAG_FEATURES_DIR / "val_visual_features.h5"
-TEST_VISUAL_FEATURES_PATH = RAG_FEATURES_DIR / "test_visual_features.h5"
-TRAIN_RAG_CONTEXTS_PATH = RAG_FEATURES_DIR / "train_rag_contexts.parquet"
-VAL_RAG_CONTEXTS_PATH = RAG_FEATURES_DIR / "val_rag_contexts.parquet"
-TEST_RAG_CONTEXTS_PATH = RAG_FEATURES_DIR / "test_rag_contexts.parquet"
+# RAG
+RAG_DIR = ARTIFACTS_DIR / "rag"
+RAG_DIR.mkdir(parents=True, exist_ok=True)
+TRAIN_VISUAL_FEATURES_PATH = RAG_DIR / "train_visual_features.h5"
+VAL_VISUAL_FEATURES_PATH = RAG_DIR / "val_visual_features.h5"
+TEST_VISUAL_FEATURES_PATH = RAG_DIR / "test_visual_features.h5"
+TRAIN_RAG_CONTEXTS_PATH = RAG_DIR / "train_rag_contexts.parquet"
+VAL_RAG_CONTEXTS_PATH = RAG_DIR / "val_rag_contexts.parquet"
+TEST_RAG_CONTEXTS_PATH = RAG_DIR / "test_rag_contexts.parquet"
 
 
 # ==========================================

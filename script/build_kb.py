@@ -12,6 +12,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.config import TRAIN_DF_PATH, KB_MODEL_ID, KB_FAISS_INDEX_PATH, KB_METADATA_PATH
+from src.utils import extract_clip_features
 
 
 def main():
@@ -56,16 +57,8 @@ def main():
             inputs = processor(text=batch_texts, return_tensors="pt", padding=True, truncation=True, max_length=77)
             inputs = {k: v.to(device) for k, v in inputs.items()}
             
-            # Lấy text features
-            # Lấy text features an toàn (tương thích mọi phiên bản transformers)
-            text_features = model.get_text_features(**inputs)
-            if not isinstance(text_features, torch.Tensor):
-                if hasattr(text_features, "text_embeds"):
-                    text_features = text_features.text_embeds
-                elif hasattr(text_features, "pooler_output"):
-                    text_features = model.text_projection(text_features.pooler_output)
-                else:
-                    text_features = text_features[0]
+            # Lấy text features, tương thích với nhiều phiên bản Transformers.
+            text_features = extract_clip_features(model.get_text_features(**inputs))
             
             # Chuẩn hóa (Normalize) vector để dùng Inner Product tính ra Cosine Similarity
             text_features = text_features / text_features.norm(p=2, dim=-1, keepdim=True)

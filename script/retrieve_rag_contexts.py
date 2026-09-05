@@ -22,6 +22,7 @@ from src.config import (
     KB_MODEL_ID, KB_FAISS_INDEX_PATH, KB_METADATA_PATH,
     IMAGES_PATH
 )
+from src.utils import extract_clip_features
 
 TARGET_K = 8
 
@@ -60,21 +61,16 @@ def process_and_retrieve(df_path, output_parquet_path, encoder, processor, index
     results = []
     
     pbar = tqdm(dataloader, disable=not accelerator.is_local_main_process, desc=f"Retrieving {df_path.name}", leave=False)
+    unwrap_encoder = accelerator.unwrap_model(encoder)
 
     for batch in pbar:
         imgids = batch["imgid"]
         pixel_values = batch["pixel_values"]
         
         with torch.no_grad():
-            # Bắt buộc phải dùng autocast thủ công ở đây. Lý do: accelerator.prepare chỉ bọc fp16 ngầm cho hàm .forward(), nó KHÔNG bọc cho các hàm custom như .get_image_features().
             with accelerator.autocast():
-                image_features = encoder.get_image_features(pixel_values=pixel_values)
-                
-            # Xử lý output chuẩn của CLIP
-            if not isinstance(image_features, torch.Tensor):
-                image_features = image_features.image_embeds if hasattr(image_features, "image_embeds") else image_features[0]
-            else:
-                image_features = image_features
+                output = unwrap_encoder.get_image_features(pixel_values=pixel_values)
+                image_features = extract_clip_features(output)
                 
             # Chuẩn hóa vector về độ dài = 1
             image_features = F.normalize(image_features, p=2, dim=-1)
@@ -153,7 +149,7 @@ def main():
     
     for df_path, parquet_path in datasets:
         if df_path.exists():
-            process_and_retrieve(df_path, parquet_path, encoder, processor, index, kb_metadata, accelerator, batch_size=256)
+            process_and_retrieve(df_path, parquet_path, encoder, processor, index, kb_metadata, accelerator)
         else:
             accelerator.print(f"Cảnh báo: Không tìm thấy {df_path}")
 

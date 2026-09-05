@@ -1,6 +1,6 @@
 .vscode
-checkpoints
 **/__pycache__
 .env
-test.ipynb
+checkpoints
 artifacts
+test.ipynb
