@@ -83,7 +83,7 @@ def process_and_retrieve(df_path, output_parquet_path, encoder, processor, index
             gathered_ids = gathered_ids.cpu().numpy()
             
             # Truy vấn FAISS (Chạy trên CPU)
-            distances, indices = index.search(gathered_features, TARGET_K+5)
+            distances, indices = index.search(gathered_features, TARGET_K+7)
             
             for idx, imgid in enumerate(gathered_ids):
                 retrieved_ids = indices[idx]
