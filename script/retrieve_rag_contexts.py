@@ -20,7 +20,7 @@ from src.config import (
     TRAIN_DF_PATH, VAL_DF_PATH, TEST_DF_PATH,
     TRAIN_RAG_CONTEXTS_PATH, VAL_RAG_CONTEXTS_PATH, TEST_RAG_CONTEXTS_PATH,
     KB_MODEL_ID, KB_FAISS_INDEX_PATH, KB_METADATA_PATH,
-    IMAGES_PATH
+    IMAGES_DIR
 )
 from src.utils import extract_clip_features
 
@@ -53,7 +53,7 @@ def process_and_retrieve(df_path, output_parquet_path, encoder, processor, index
     
     df = pd.read_parquet(df_path)
     df_unique = df.drop_duplicates(subset=['imgid']).reset_index(drop=True)
-    dataset = ImageQueryDataset(df_unique, IMAGES_PATH, processor)
+    dataset = ImageQueryDataset(df_unique, IMAGES_DIR, processor)
     dataloader = DataLoader(dataset, batch_size=batch_size, num_workers=4)
 
     dataloader = accelerator.prepare(dataloader)

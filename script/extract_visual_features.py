@@ -18,7 +18,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from src.config import (
     TRAIN_DF_PATH, VAL_DF_PATH, TEST_DF_PATH,
     TRAIN_VISUAL_FEATURES_PATH, VAL_VISUAL_FEATURES_PATH, TEST_VISUAL_FEATURES_PATH,
-    IMAGES_PATH, DMODEL
+    IMAGES_DIR, DMODEL
 )
 from src.encoder import CLIPViTB16Encoder
 from src.dataset import create_clip_transform
@@ -50,7 +50,7 @@ def process_and_save(df_path, output_h5_path, encoder, transform, accelerator, b
         
     df = pd.read_parquet(df_path)
     df_unique = df.drop_duplicates(subset=["imgid"]).reset_index(drop=True)
-    dataset = ImageFeatureDataset(df_unique, IMAGES_PATH, transform=transform)
+    dataset = ImageFeatureDataset(df_unique, IMAGES_DIR, transform=transform)
     dataloader = DataLoader(dataset, batch_size=batch_size, num_workers=4)
     
     dataloader = accelerator.prepare(dataloader)

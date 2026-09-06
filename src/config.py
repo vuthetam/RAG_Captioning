@@ -20,7 +20,7 @@ RUN_MODE = os.getenv("RUN_MODE", "baseline")  # 'baseline' hoặc 'rag'
 DATASET_COCO_PATH = Path(
     os.getenv("DATASET_COCO_PATH", str(ROOT_PATH / "dataset" / "mscoco" / "dataset_coco.json"))
 )
-IMAGES_PATH = Path(
+IMAGES_DIR = Path(
     os.getenv("IMAGES_PATH", str(ROOT_PATH / "dataset" / "mscoco" / "images"))
 )
 

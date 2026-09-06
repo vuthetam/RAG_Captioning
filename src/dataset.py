@@ -6,7 +6,7 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 from torchvision.transforms import InterpolationMode
 
-from src.config import IMAGES_PATH
+from src.config import IMAGES_DIR
 from src.vocabulary import Vocabulary
 
 
@@ -34,7 +34,7 @@ class MSCOCODataset(Dataset):
     ) -> None:
         self.df = df.reset_index(drop=True)
         self.vocab = vocab
-        self.images_dir = Path(images_dir) if images_dir is not None else Path(IMAGES_PATH)
+        self.images_dir = Path(images_dir) if images_dir is not None else Path(IMAGES_DIR)
         self.transform = transform or create_clip_transform()
         self.max_length = max_length
 
@@ -66,7 +66,7 @@ class ImageOnlyDataset(Dataset):
         transform=None,
     ) -> None:
         self.df = df.reset_index(drop=True)
-        self.images_dir = Path(images_dir) if images_dir is not None else Path(IMAGES_PATH)
+        self.images_dir = Path(images_dir) if images_dir is not None else Path(IMAGES_DIR)
         self.transform = transform or create_clip_transform()
 
     def __len__(self) -> int:
