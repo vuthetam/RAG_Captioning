@@ -127,7 +127,7 @@ def generate_captions(
     extend it with retrieval-augmented context before passing *memory* in.
 
     Args:
-        dataloader: prepared DataLoader (each batch yields at least images as
+        dataloader: prepared DataLoader (each batch yields at least visual inputs as
                     its first element; extra elements such as input_ids are ignored).
 
     Returns:
@@ -140,11 +140,15 @@ def generate_captions(
     all_captions: list[list[str]] = []
     iterator = tqdm(dataloader, disable=not show_progress, leave=False, desc="Generating")
 
-    for images, *_ in iterator:
-        images = images.to(accelerator.device)
+    for visual_inputs, *_ in iterator:
+        visual_inputs = visual_inputs.to(accelerator.device)
 
         # Encode first — extend here with retrieval context if needed
-        memory = model.encode_image(images)                             # (B, S, D)
+        with accelerator.autocast():
+            if model.use_precomputed_features:
+                memory = model.encode_features(visual_inputs)            # (B, S, D)
+            else:
+                memory = model.encode_image(visual_inputs)               # (B, S, D)
 
         # Beam search on this process's shard
         sequences = beam_search(

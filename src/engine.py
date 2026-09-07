@@ -12,15 +12,14 @@ from src.utils import trainable_parameters
 
 def _step(
     model: nn.Module,
-    images: torch.Tensor,
+    visual_inputs: torch.Tensor,
     input_ids: torch.Tensor,
     attention_mask: torch.Tensor,
     pad_idx: int,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     target_ids = input_ids[:, 1:]
     
-    # Giao phó toàn bộ quá trình cắt chuỗi, extract feature cho model
-    logits = model(images, input_ids, attention_mask)
+    logits = model(visual_inputs, input_ids, attention_mask)
 
     loss_sum = nn.functional.cross_entropy(
         logits.reshape(-1, logits.size(-1)),
@@ -48,14 +47,14 @@ def train_one_epoch(
     total_tokens = 0
     iterator = tqdm(dataloader, disable=not show_progress, leave=False, desc="Training")
 
-    for images, input_ids, attention_mask in iterator:
-        images = images.to(accelerator.device)
+    for visual_inputs, input_ids, attention_mask in iterator:
+        visual_inputs = visual_inputs.to(accelerator.device)
         input_ids = input_ids.to(accelerator.device)
         attention_mask = attention_mask.to(accelerator.device)
 
         optimizer.zero_grad(set_to_none=True)
         with accelerator.autocast():
-            _, loss_sum, num_tokens = _step(model, images, input_ids, attention_mask, pad_idx)
+            _, loss_sum, num_tokens = _step(model, visual_inputs, input_ids, attention_mask, pad_idx)
 
         accelerator.backward(loss_sum)
         accelerator.clip_grad_norm_(
@@ -89,13 +88,13 @@ def evaluate_one_epoch(
     total_tokens = 0
     iterator = tqdm(dataloader, disable=not show_progress, leave=False, desc="Evaluating")
 
-    for images, input_ids, attention_mask in iterator:
-        images = images.to(accelerator.device)
+    for visual_inputs, input_ids, attention_mask in iterator:
+        visual_inputs = visual_inputs.to(accelerator.device)
         input_ids = input_ids.to(accelerator.device)
         attention_mask = attention_mask.to(accelerator.device)
 
         with accelerator.autocast():
-            _, loss_sum, num_tokens = _step(model, images, input_ids, attention_mask, pad_idx)
+            _, loss_sum, num_tokens = _step(model, visual_inputs, input_ids, attention_mask, pad_idx)
 
         reduced_loss = accelerator.reduce(loss_sum.detach(), reduction="sum")
         reduced_tokens = accelerator.reduce(num_tokens.detach(), reduction="sum")

@@ -51,15 +51,24 @@ Script dùng ảnh làm truy vấn CLIP, tìm các caption tương tự trong FA
 
 Script đọc trực tiếp ảnh và sử dụng `kb_text_index.faiss` cùng `kb_metadata.parquet`.
 
-## 5. Train, generate và evaluate
+## 5. Train, generate va evaluate bang visual features
 
-Thực hiện các notebook theo thứ tự:
+Sau khi da co ca ba file H5, train va sinh caption khong can doc anh hay tai
+CLIP vision encoder nua:
 
-1. `train.ipynb`: train `BaselineCaptioner`, lưu checkpoint vào `checkpoints/<RUN_MODE>/`.
-2. `generate_caption.ipynb`: load `best_checkpoint.pth`, sinh caption cho test set bằng beam search và lưu prediction JSON.
-3. `evaluate.ipynb`: đọc prediction và `test_df.parquet`, tính BLEU, METEOR, ROUGE-L, CIDEr, SPICE và hiển thị mẫu kết quả.
+```bash
+RUN_MODE=baseline_precomputed /home/tam/Link\ to\ workspace/ML/.venv/bin/accelerate launch script/train_precomputed_features.py
+RUN_MODE=baseline_precomputed /home/tam/Link\ to\ workspace/ML/.venv/bin/accelerate launch script/generate_precomputed_captions.py
+```
 
-Các notebook hiện được thiết kế để chạy trong môi trường notebook/Kaggle. Khi chạy local, cần chỉnh các cell cấu hình đường dẫn và bảo đảm `main.py` được tạo đúng thư mục mà lệnh `accelerate launch` sử dụng.
+Hai lenh phai dung cung `RUN_MODE` de dung chung checkpoint. `RUN_MODE` moi
+tranh resume nham checkpoint cu duoc train theo duong online-encoder. Feature
+files can co format `imgids` va `features` nhu mo ta o `ARTIFACTS.md`; code se
+kiem tra moi `imgid` trong split deu co feature truoc khi train.
+
+Cuoi cung chay `evaluate.ipynb` de tinh BLEU, METEOR, ROUGE-L, CIDEr va SPICE
+tu prediction JSON. Notebook nay khong encode anh; phan hien thi mau van can
+`IMAGES_PATH` neu muon xem anh goc.
 
 ## Cấu hình đường dẫn chính
 

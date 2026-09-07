@@ -93,8 +93,9 @@ Khi train, có thể dùng đủ 197 token hoặc bỏ CLS qua `features[:, 1:, 
 | `features` | `(N, 197, 768)` | CLIP features `float16`; `features[i]` là feature của `imgids[i]` |
 | `imgids` | `(N,)` | Image ID `int64` ứng với từng row của `features` |
 
-`features` được chunk theo từng ảnh để ưu tiên random access. Các file HDF5 theo
-format cũ (mỗi `imgid` là một dataset) cần được rebuild.
+`features` được chunk theo từng ảnh để ưu tiên random access. Khi train qua
+`script/train_precomputed_features.py`, dataframe van co mot dong cho moi
+caption nhung feature duoc tra theo `imgid`.
 
 ## 6. `rag/*_rag_contexts.parquet`
 
@@ -110,7 +111,7 @@ Phần tử ở cùng vị trí trong hai list là một cặp caption/score.
 
 ## 7. `<RUN_MODE>_predictions.json`
 
-Được tạo bởi notebook `generate_caption.ipynb`. Theo `src/config.py`, file được ghi trực tiếp vào `artifacts/<RUN_MODE>_predictions.json`; với `RUN_MODE=baseline`, tên mặc định là `artifacts/baseline_predictions.json`.
+Được tạo bởi `script/generate_precomputed_captions.py`. Theo `src/config.py`, file được ghi trực tiếp vào `artifacts/<RUN_MODE>_predictions.json`; với `RUN_MODE=baseline`, tên mặc định là `artifacts/baseline_predictions.json`.
 
 Đây là JSON array, mỗi phần tử có dạng:
 
