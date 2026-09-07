@@ -50,12 +50,17 @@ KB_METADATA_PATH = KB_DIR / "kb_metadata.parquet"
 # RAG
 RAG_DIR = ARTIFACTS_DIR / "rag"
 RAG_DIR.mkdir(parents=True, exist_ok=True)
-TRAIN_VISUAL_FEATURES_PATH = RAG_DIR / "train_visual_features.h5"
-VAL_VISUAL_FEATURES_PATH = RAG_DIR / "val_visual_features.h5"
-TEST_VISUAL_FEATURES_PATH = RAG_DIR / "test_visual_features.h5"
 TRAIN_RAG_CONTEXTS_PATH = RAG_DIR / "train_rag_contexts.parquet"
 VAL_RAG_CONTEXTS_PATH = RAG_DIR / "val_rag_contexts.parquet"
 TEST_RAG_CONTEXTS_PATH = RAG_DIR / "test_rag_contexts.parquet"
+
+# Visual features
+VISUAL_FEATURES_DIR = Path(os.getenv("VISUAL_FEATURES_DIR", str(ARTIFACTS_DIR / "visual_features")))
+VISUAL_FEATURES_DIR.mkdir(parents=True, exist_ok=True)
+TRAIN_VISUAL_FEATURES_PATH = VISUAL_FEATURES_DIR / "train_visual_features.h5"
+VAL_VISUAL_FEATURES_PATH = VISUAL_FEATURES_DIR / "val_visual_features.h5"
+TEST_VISUAL_FEATURES_PATH = VISUAL_FEATURES_DIR / "test_visual_features.h5"
+
 
 
 # ==========================================
@@ -75,9 +80,10 @@ BEST_CHECKPOINT_PATH = RUN_CHECKPOINT_DIR / "best_checkpoint.pth"
 # 5. HYPERPARAMETERS
 # ==========================================
 # Model Architecture
+CLIP_MODEL_NAME = "openai/clip-vit-base-patch16"
 DMODEL = int(os.getenv("DMODEL", "512"))
 NHEADS = int(os.getenv("NHEADS", "8"))
-NLAYERS = int(os.getenv("NLAYERS", "4"))
+NLAYERS = int(os.getenv("NLAYERS", "6"))
 DROPOUT = float(os.getenv("DROPOUT", "0.1"))
 
 # Training

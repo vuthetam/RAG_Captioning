@@ -18,11 +18,10 @@ if str(PROJECT_ROOT) not in sys.path:
 from src.config import (
     TRAIN_DF_PATH, VAL_DF_PATH, TEST_DF_PATH,
     TRAIN_VISUAL_FEATURES_PATH, VAL_VISUAL_FEATURES_PATH, TEST_VISUAL_FEATURES_PATH,
-    IMAGES_DIR, DMODEL
+    IMAGES_DIR,
 )
 from src.encoder import CLIPViTB16Encoder
 from src.dataset import create_clip_transform
-
 
 class ImageFeatureDataset(Dataset):
     def __init__(self, df, images_path, transform):
@@ -41,7 +40,7 @@ class ImageFeatureDataset(Dataset):
             pixel_values = self.transform(img.convert("RGB"))
         
         return {
-            "imgid": int(self.imgids[idx]), 
+            "feature_index": idx,
             "pixel_values": pixel_values
         }
 
@@ -54,31 +53,43 @@ def process_and_save(df_path, output_h5_path, encoder, transform, accelerator, b
     dataloader = DataLoader(dataset, batch_size=batch_size, num_workers=4)
     
     dataloader = accelerator.prepare(dataloader)
-    
+
+    feature_store = None
     if accelerator.is_main_process:
         output_h5_path.parent.mkdir(parents=True, exist_ok=True)
         h5f = h5py.File(output_h5_path, 'w')
+        h5f.create_dataset("imgids", data=df_unique["imgid"].to_numpy(dtype="int64"))
+        h5f.attrs["feature_layout"] = "features[i] belongs to imgids[i]"
+        h5f.attrs["chunk_rows"] = 1
 
     pbar = tqdm(dataloader, disable=not accelerator.is_local_main_process, desc=f"Extracting {df_path.name}", leave=False)
 
     for batch in pbar:
-        imgids = batch["imgid"]
+        feature_indices = batch["feature_index"]
         pixel_values = batch["pixel_values"]
         with torch.no_grad():
             features = encoder(pixel_values).to(torch.float16)
-        
-        # Gom kết quả từ cả 2 GPU về lại Main Process an toàn (loại bỏ padding dummy data)
-        gathered_ids, gathered_features = accelerator.gather_for_metrics((imgids, features))
-        
+
+        # Retain the source row index because gathered batches are not guaranteed to be ordered.
+        gathered_indices, gathered_features = accelerator.gather_for_metrics(
+            (feature_indices, features)
+        )
+
         if accelerator.is_main_process:
-            gathered_ids = gathered_ids.cpu().numpy()
-            gathered_features = gathered_features.cpu().numpy()
-            
-            for imgid, feat in zip(gathered_ids, gathered_features):
-                # Ép kiểu int về string vì HDF5 chỉ nhận key là chuỗi
-                imgid = str(imgid)
-                if imgid not in h5f:
-                    h5f.create_dataset(imgid, data=feat, dtype='float16')
+            if feature_store is None:
+                feature_shape = tuple(gathered_features.shape[1:])
+                feature_store = h5f.create_dataset(
+                    "features",
+                    shape=(len(df_unique), *feature_shape),
+                    dtype="float16",
+                    # One image per chunk minimizes read amplification for random access.
+                    chunks=(1, *feature_shape),
+                )
+
+            sorted_indices, sort_order = torch.sort(gathered_indices)
+            feature_store[sorted_indices.cpu().numpy()] = (
+                gathered_features[sort_order].cpu().numpy()
+            )
 
     if accelerator.is_main_process:
         h5f.close()
@@ -90,7 +101,7 @@ def main():
     accelerator.print(f"Khởi động môi trường Multi-GPU ({accelerator.num_processes} processes)")
     accelerator.print("Đang tải CLIPViTB16Encoder...")
         
-    encoder = CLIPViTB16Encoder(d_model=DMODEL)
+    encoder = CLIPViTB16Encoder()
     encoder.eval()
     encoder = accelerator.prepare(encoder)
     
@@ -104,7 +115,14 @@ def main():
     
     for df_path, h5_path in datasets:
         if df_path.exists():
-            process_and_save(df_path, h5_path, encoder, transform, accelerator, batch_size=256)
+            process_and_save(
+                df_path,
+                h5_path,
+                encoder,
+                transform,
+                accelerator,
+                batch_size=256,
+            )
         else:
             accelerator.print(f"Cảnh báo: Không tìm thấy {df_path}")
 

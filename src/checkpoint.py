@@ -37,13 +37,7 @@ def load_checkpoint(
     device: str | torch.device = "cpu",
 ):
     checkpoint = torch.load(Path(path), map_location=device, weights_only=True)
-
-    # Backward compatibility for old checkpoints (encoder_state_dict, decoder_state_dict)
-    if "encoder_state_dict" in checkpoint and "decoder_state_dict" in checkpoint:
-        model.encoder.load_state_dict(checkpoint["encoder_state_dict"])
-        model.decoder.load_state_dict(checkpoint["decoder_state_dict"])
-    else:
-        model.load_state_dict(checkpoint["model_state_dict"])
+    model.load_state_dict(checkpoint["model_state_dict"])
 
     if optimizer is not None and checkpoint.get("optimizer_state_dict") is not None:
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])

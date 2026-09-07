@@ -70,6 +70,7 @@ Các biến được định nghĩa trong `src/config.py`:
 | `DATASET_COCO_PATH` | `dataset/mscoco/dataset_coco.json` |
 | `IMAGES_PATH` | `dataset/mscoco/images` |
 | `ARTIFACTS_DIR` | `artifacts` |
+| `VISUAL_FEATURES_DIR` | `artifacts/visual_features` |
 | `CHECKPOINTS_DIR` | `checkpoints` |
 | `RUN_MODE` | `baseline` |
 

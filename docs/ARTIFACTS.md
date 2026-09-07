@@ -15,6 +15,10 @@ artifacts/
 ├── kb/
 │   ├── kb_text_index.faiss
 │   └── kb_metadata.parquet
+├── visual_features/
+│   ├── train_visual_features.h5
+│   ├── val_visual_features.h5
+│   └── test_visual_features.h5
 └── rag/
     ├── train_rag_contexts.parquet
     ├── val_rag_contexts.parquet
@@ -75,7 +79,24 @@ Index FAISS kiểu `IndexFlatIP`. Mỗi vector là text embedding CLIP đã L2-n
 
 Khi retrieve, các caption có cùng `imgid` với ảnh truy vấn sẽ bị loại bỏ, sau đó giữ lại tối đa `8` caption có điểm cao nhất.
 
-## 5. `rag/*_rag_contexts.parquet`
+## 5. `visual_features/*_visual_features.h5`
+
+Được tạo bởi `script/extract_visual_features.py`. Mặc định các file này nằm trong
+`artifacts/visual_features`. Đặt `VISUAL_FEATURES_DIR` để ghi các file HDF5 vào
+một thư mục khác. Mỗi `imgid` lưu output CLIP nguyên gốc gồm CLS token và patch
+tokens; với model mặc định `openai/clip-vit-base-patch16`, shape là `(197, 768)`.
+Khi train, có thể dùng đủ 197 token hoặc bỏ CLS qua `features[:, 1:, :]` để còn
+196 patch tokens. Mỗi file HDF5 có hai dataset:
+
+| Dataset | Shape | Nội dung |
+| --- | --- | --- |
+| `features` | `(N, 197, 768)` | CLIP features `float16`; `features[i]` là feature của `imgids[i]` |
+| `imgids` | `(N,)` | Image ID `int64` ứng với từng row của `features` |
+
+`features` được chunk theo từng ảnh để ưu tiên random access. Các file HDF5 theo
+format cũ (mỗi `imgid` là một dataset) cần được rebuild.
+
+## 6. `rag/*_rag_contexts.parquet`
 
 Được tạo bởi `script/retrieve_rag_contexts.py`, mỗi dòng tương ứng với một ảnh duy nhất:
 
@@ -87,7 +108,7 @@ Khi retrieve, các caption có cùng `imgid` với ảnh truy vấn sẽ bị lo
 
 Phần tử ở cùng vị trí trong hai list là một cặp caption/score.
 
-## 6. `<RUN_MODE>_predictions.json`
+## 7. `<RUN_MODE>_predictions.json`
 
 Được tạo bởi notebook `generate_caption.ipynb`. Theo `src/config.py`, file được ghi trực tiếp vào `artifacts/<RUN_MODE>_predictions.json`; với `RUN_MODE=baseline`, tên mặc định là `artifacts/baseline_predictions.json`.
 
