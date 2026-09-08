@@ -31,7 +31,9 @@ ARTIFACTS_DIR = Path(os.getenv("ARTIFACTS_DIR", str(ROOT_PATH / "artifacts")))
 ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
 
 VOCAB_PATH = ARTIFACTS_DIR / "vocab.json"
-PREDICTIONS_PATH = ARTIFACTS_DIR / f"{RUN_MODE}_predictions.json"
+RUN_ARTIFACTS_DIR = ARTIFACTS_DIR / RUN_MODE
+PREDICTIONS_PATH = RUN_ARTIFACTS_DIR / "predictions.json"
+METRICS_PATH = RUN_ARTIFACTS_DIR / "metrics.json"
 
 # Splits
 SPLITS_DIR = ARTIFACTS_DIR / "splits"

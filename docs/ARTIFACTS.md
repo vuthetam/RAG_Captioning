@@ -5,9 +5,9 @@
 ```text
 artifacts/
 ├── vocab.json
-├── <RUN_MODE>_predictions.json
-├── baseline/
-│   └── baseline_predictions.json
+├── <RUN_MODE>/
+│   ├── prediction.json
+│   └── metrics.json
 ├── splits/
 │   ├── train_df.parquet
 │   ├── val_df.parquet
@@ -109,9 +109,9 @@ caption nhung feature duoc tra theo `imgid`.
 
 Phần tử ở cùng vị trí trong hai list là một cặp caption/score.
 
-## 7. `<RUN_MODE>_predictions.json`
+## 7. `<RUN_MODE>/prediction.json`
 
-Được tạo bởi `script/generate_precomputed_captions.py`. Theo `src/config.py`, file được ghi trực tiếp vào `artifacts/<RUN_MODE>_predictions.json`; với `RUN_MODE=baseline`, tên mặc định là `artifacts/baseline_predictions.json`.
+Được tạo bởi `script/generate_precomputed_captions.py`. Theo `src/config.py`, file được ghi vào `artifacts/<RUN_MODE>/prediction.json`; với `RUN_MODE=baseline`, tên mặc định là `artifacts/baseline/prediction.json`.
 
 Đây là JSON array, mỗi phần tử có dạng:
 
@@ -123,3 +123,9 @@ Phần tử ở cùng vị trí trong hai list là một cặp caption/score.
 ```
 
 `imgid` phải khớp với `test_df.parquet`; `caption` là caption dự đoán sau khi giải mã token.
+
+## 8. `<RUN_MODE>/metrics.json`
+
+Được tạo bởi `evaluate.ipynb` sau khi chấm BLEU, METEOR, ROUGE-L, CIDEr và
+SPICE. Theo `src/config.py`, với `RUN_MODE=baseline`, tên mặc định là
+`artifacts/baseline/metrics.json`.
