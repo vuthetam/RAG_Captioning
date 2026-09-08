@@ -117,55 +117,49 @@ def generate_captions(
     accelerator: Accelerator,
     length_penalty: float = 1.0,
     show_progress: bool = False,
-) -> list[list[str]]:
+) -> dict[int, list[str]]:
     """Generate captions for every image in *dataloader* using batched beam search.
 
     Each Accelerate process handles its own shard of the dataloader;
     results are gathered to the main process via ``gather_for_metrics``.
 
-    The encoding step is kept separate from ``beam_search`` so the caller can
-    extend it with retrieval-augmented context before passing *memory* in.
-
     Args:
-        dataloader: prepared DataLoader (each batch yields at least visual inputs as
-                    its first element; extra elements such as input_ids are ignored).
+        dataloader: prepared DataLoader. Must yield (visual_inputs, ..., image_id)
+                    where image_id is the last element.
 
     Returns:
-        On the main process: list of decoded token lists (special tokens excluded),
-        in dataset order.
-        On other processes: empty list.
+        On the main process: dict mapping imgid -> list of decoded token strings.
+        On other processes: empty dict.
     """
     model.eval()
-    # DDP does not expose BaselineCaptioner-specific encoding helpers.
     base_model = accelerator.unwrap_model(model)
 
-    all_captions: list[list[str]] = []
+    all_captions: dict[int, list[str]] = {}
     iterator = tqdm(dataloader, disable=not show_progress, leave=False, desc="Generating")
 
-    for visual_inputs, *_ in iterator:
+    for visual_inputs, *_, image_ids in iterator:
         visual_inputs = visual_inputs.to(accelerator.device)
+        image_ids = image_ids.to(accelerator.device)
 
-        # Keep decoding in the same AMP context as encoding: projected visual
-        # memory is float16 under CUDA autocast while decoder weights are float32.
         with accelerator.autocast():
             if base_model.use_precomputed_features:
                 memory = base_model.encode_features(visual_inputs)       # (B, S, D)
             else:
                 memory = base_model.encode_image(visual_inputs)          # (B, S, D)
 
-            # Beam search on this process's shard
             sequences = beam_search(
                 base_model.decoder, memory, vocab, beam_size, max_length, length_penalty
             )                                                # (B_local, max_length)
 
-        # Gather across all processes, stripping dummy samples from the last batch
-        gathered = accelerator.gather_for_metrics(sequences) # (B_total, max_length)
+        # Gather both generated sequences and their corresponding IDs
+        gathered_seqs = accelerator.gather_for_metrics(sequences) # (B_total, max_length)
+        gathered_ids = accelerator.gather_for_metrics(image_ids)  # (B_total,)
 
         if accelerator.is_main_process:
-            for row in gathered.tolist():
-                tokens = vocab.decode(row, skip_special_tokens=True)
-                # Remove any residual pad tokens
+            for imgid_tensor, token_ids in zip(gathered_ids, gathered_seqs.tolist()):
+                imgid = int(imgid_tensor.item())
+                tokens = vocab.decode(token_ids, skip_special_tokens=True)
                 tokens = [t for t in tokens if t != vocab.pad_token]
-                all_captions.append(tokens)
+                all_captions[imgid] = tokens
 
     return all_captions

@@ -65,14 +65,14 @@ def main() -> None:
     load_checkpoint(BEST_CHECKPOINT_PATH, model, device=accelerator.device)
 
     model, test_loader = accelerator.prepare(model, test_loader)
-    caption_tokens_list = generate_captions(
+    caption_dict = generate_captions(
         model, test_loader, vocab, BEAM_SIZE, MAX_LENGTH, accelerator, show_progress=True
     )
 
     if accelerator.is_main_process:
         predictions = [
-            {"imgid": int(imgid), "caption": " ".join(caption_tokens)}
-            for imgid, caption_tokens in zip(test_df["imgid"], caption_tokens_list)
+            {"imgid": int(imgid), "caption": " ".join(caption_dict[imgid])}
+            for imgid in test_df["imgid"]
         ]
         PREDICTIONS_PATH.parent.mkdir(parents=True, exist_ok=True)
         with PREDICTIONS_PATH.open("w", encoding="utf-8") as output_file:

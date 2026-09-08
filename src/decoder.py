@@ -50,7 +50,7 @@ class TransformerCaptionDecoder(nn.Module):
 
     def _generate_square_subsequent_mask(self, size: int, device: torch.device) -> Tensor:
         return torch.triu(
-            torch.full((size, size), float("-inf"), device=device),
+            torch.ones((size, size), dtype=torch.bool, device=device),
             diagonal=1,
         )
 
