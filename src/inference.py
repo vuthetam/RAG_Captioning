@@ -143,17 +143,18 @@ def generate_captions(
     for visual_inputs, *_ in iterator:
         visual_inputs = visual_inputs.to(accelerator.device)
 
-        # Encode first — extend here with retrieval context if needed
+        # Keep decoding in the same AMP context as encoding: projected visual
+        # memory is float16 under CUDA autocast while decoder weights are float32.
         with accelerator.autocast():
             if model.use_precomputed_features:
                 memory = model.encode_features(visual_inputs)            # (B, S, D)
             else:
                 memory = model.encode_image(visual_inputs)               # (B, S, D)
 
-        # Beam search on this process's shard
-        sequences = beam_search(
-            model.decoder, memory, vocab, beam_size, max_length, length_penalty
-        )                                                    # (B_local, max_length)
+            # Beam search on this process's shard
+            sequences = beam_search(
+                model.decoder, memory, vocab, beam_size, max_length, length_penalty
+            )                                                # (B_local, max_length)
 
         # Gather across all processes, stripping dummy samples from the last batch
         gathered = accelerator.gather_for_metrics(sequences) # (B_total, max_length)
