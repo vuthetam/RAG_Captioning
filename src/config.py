@@ -85,7 +85,7 @@ BEST_CHECKPOINT_PATH = RUN_CHECKPOINT_DIR / "best_checkpoint.pth"
 CLIP_MODEL_NAME = "openai/clip-vit-base-patch16"
 DMODEL = int(os.getenv("DMODEL", "512"))
 NHEADS = int(os.getenv("NHEADS", "8"))
-NLAYERS = int(os.getenv("NLAYERS", "6"))
+NLAYERS = int(os.getenv("NLAYERS", "4"))
 DROPOUT = float(os.getenv("DROPOUT", "0.1"))
 
 # Training
