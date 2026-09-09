@@ -35,9 +35,10 @@ def load_checkpoint(
     model,
     optimizer=None,
     device: str | torch.device = "cpu",
+    strict: bool = True,
 ):
     checkpoint = torch.load(Path(path), map_location=device, weights_only=True)
-    model.load_state_dict(checkpoint["model_state_dict"])
+    model.load_state_dict(checkpoint["model_state_dict"], strict=strict)
 
     if optimizer is not None and checkpoint.get("optimizer_state_dict") is not None:
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])

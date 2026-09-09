@@ -62,7 +62,7 @@ def main() -> None:
     )
     if not BEST_CHECKPOINT_PATH.is_file():
         raise FileNotFoundError(f"Khong tim thay checkpoint: {BEST_CHECKPOINT_PATH}")
-    load_checkpoint(BEST_CHECKPOINT_PATH, model, device=accelerator.device)
+    load_checkpoint(BEST_CHECKPOINT_PATH, model, device=accelerator.device, strict=False)
 
     model, test_loader = accelerator.prepare(model, test_loader)
     caption_dict = generate_captions(
