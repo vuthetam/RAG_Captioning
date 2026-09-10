@@ -1,7 +1,10 @@
+import re
+import string
 from pathlib import Path
 
 import h5py
 import numpy as np
+import pandas as pd
 from PIL import Image
 import torch
 from torch.utils.data import Dataset
@@ -164,3 +167,88 @@ class PrecomputedFeatureOnlyDataset(_H5FeatureStore, Dataset):
         image_id = int(row["imgid"])
 
         return image_feature, image_id
+
+
+def normalize_caption(text: str) -> list[str]:
+    """Lowercase + bỏ dấu câu + split → token list."""
+    text = text.lower().strip()
+    text = re.sub(f"[{re.escape(string.punctuation)}]", "", text)
+    return text.split()
+
+
+def encode_rag_context(
+    retrieved_texts: list[str],
+    vocab: Vocabulary,
+    max_ctx_length: int,
+    top_k: int,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Normalize + tokenize từng caption, nối bằng <eos>, encode thành tensor."""
+    all_tokens = []
+    for caption in retrieved_texts[:top_k]:
+        tokens = normalize_caption(caption)
+        if all_tokens:
+            all_tokens.append(vocab.eos_token)
+        all_tokens.extend(tokens)
+
+    # Cắt nếu quá dài
+    if len(all_tokens) > max_ctx_length:
+        all_tokens = all_tokens[:max_ctx_length]
+
+    # Encode tokens → IDs
+    token_ids = [vocab.token_to_idx(t) for t in all_tokens]
+    attention_mask = [1] * len(token_ids)
+
+    # Pad
+    pad_len = max_ctx_length - len(token_ids)
+    if pad_len > 0:
+        token_ids.extend([vocab.pad_idx()] * pad_len)
+        attention_mask.extend([0] * pad_len)
+
+    return torch.tensor(token_ids, dtype=torch.long), torch.tensor(attention_mask, dtype=torch.long)
+
+
+class RAGPrecomputedFeatureDataset(PrecomputedFeatureDataset):
+    def __init__(self, df, vocab, features_path, rag_contexts_path,
+                 max_length, max_ctx_length, top_k):
+        super().__init__(df, vocab, features_path, max_length)
+        rag_df = pd.read_parquet(rag_contexts_path)
+        # Build lookup: imgid → retrieved_texts list (if available)
+        self._rag_lookup = dict(zip(rag_df["imgid"], rag_df["retrieved_texts"]))
+        self.max_ctx_length = max_ctx_length
+        self.top_k = top_k
+
+    def __getitem__(self, idx: int):
+        visual_feature, input_ids, attention_mask = super().__getitem__(idx)
+        imgid = int(self.df.iloc[idx]["imgid"])
+        
+        retrieved_texts = self._rag_lookup.get(imgid, [])
+        if isinstance(retrieved_texts, np.ndarray):
+            retrieved_texts = retrieved_texts.tolist()
+            
+        rag_input_ids, rag_attention_mask = encode_rag_context(
+            retrieved_texts, self.vocab, self.max_ctx_length, self.top_k
+        )
+        return visual_feature, input_ids, attention_mask, rag_input_ids, rag_attention_mask
+
+
+class RAGPrecomputedFeatureOnlyDataset(PrecomputedFeatureOnlyDataset):
+    def __init__(self, df, features_path, rag_contexts_path,
+                 vocab, max_ctx_length, top_k):
+        super().__init__(df, features_path)
+        rag_df = pd.read_parquet(rag_contexts_path)
+        self._rag_lookup = dict(zip(rag_df["imgid"], rag_df["retrieved_texts"]))
+        self.vocab = vocab
+        self.max_ctx_length = max_ctx_length
+        self.top_k = top_k
+
+    def __getitem__(self, idx: int):
+        visual_feature, imgid = super().__getitem__(idx)
+        
+        retrieved_texts = self._rag_lookup.get(imgid, [])
+        if isinstance(retrieved_texts, np.ndarray):
+            retrieved_texts = retrieved_texts.tolist()
+            
+        rag_input_ids, rag_attention_mask = encode_rag_context(
+            retrieved_texts, self.vocab, self.max_ctx_length, self.top_k
+        )
+        return visual_feature, rag_input_ids, rag_attention_mask, imgid

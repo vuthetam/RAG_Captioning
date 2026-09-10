@@ -16,10 +16,11 @@ def _step(
     input_ids: torch.Tensor,
     attention_mask: torch.Tensor,
     pad_idx: int,
+    **kwargs,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     target_ids = input_ids[:, 1:]
     
-    logits = model(visual_inputs, input_ids, attention_mask)
+    logits = model(visual_inputs, input_ids, attention_mask, **kwargs)
 
     loss_sum = nn.functional.cross_entropy(
         logits.reshape(-1, logits.size(-1)),
@@ -47,14 +48,24 @@ def train_one_epoch(
     total_tokens = 0
     iterator = tqdm(dataloader, disable=not show_progress, leave=False, desc="Training")
 
-    for visual_inputs, input_ids, attention_mask in iterator:
+    for batch in iterator:
+        if len(batch) == 5:
+            visual_inputs, input_ids, attention_mask, rag_input_ids, rag_attention_mask = batch
+            kwargs = {
+                "rag_input_ids": rag_input_ids.to(accelerator.device),
+                "rag_attention_mask": rag_attention_mask.to(accelerator.device)
+            }
+        else:
+            visual_inputs, input_ids, attention_mask = batch
+            kwargs = {}
+
         visual_inputs = visual_inputs.to(accelerator.device)
         input_ids = input_ids.to(accelerator.device)
         attention_mask = attention_mask.to(accelerator.device)
 
         optimizer.zero_grad(set_to_none=True)
         with accelerator.autocast():
-            _, loss_sum, num_tokens = _step(model, visual_inputs, input_ids, attention_mask, pad_idx)
+            _, loss_sum, num_tokens = _step(model, visual_inputs, input_ids, attention_mask, pad_idx, **kwargs)
 
         accelerator.backward(loss_sum)
         accelerator.clip_grad_norm_(
@@ -88,13 +99,23 @@ def evaluate_one_epoch(
     total_tokens = 0
     iterator = tqdm(dataloader, disable=not show_progress, leave=False, desc="Evaluating")
 
-    for visual_inputs, input_ids, attention_mask in iterator:
+    for batch in iterator:
+        if len(batch) == 5:
+            visual_inputs, input_ids, attention_mask, rag_input_ids, rag_attention_mask = batch
+            kwargs = {
+                "rag_input_ids": rag_input_ids.to(accelerator.device),
+                "rag_attention_mask": rag_attention_mask.to(accelerator.device)
+            }
+        else:
+            visual_inputs, input_ids, attention_mask = batch
+            kwargs = {}
+
         visual_inputs = visual_inputs.to(accelerator.device)
         input_ids = input_ids.to(accelerator.device)
         attention_mask = attention_mask.to(accelerator.device)
 
         with accelerator.autocast():
-            _, loss_sum, num_tokens = _step(model, visual_inputs, input_ids, attention_mask, pad_idx)
+            _, loss_sum, num_tokens = _step(model, visual_inputs, input_ids, attention_mask, pad_idx, **kwargs)
 
         reduced_loss = accelerator.reduce(loss_sum.detach(), reduction="sum")
         reduced_tokens = accelerator.reduce(num_tokens.detach(), reduction="sum")

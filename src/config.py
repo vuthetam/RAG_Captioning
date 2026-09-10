@@ -82,7 +82,6 @@ BEST_CHECKPOINT_PATH = RUN_CHECKPOINT_DIR / "best_checkpoint.pth"
 # 5. HYPERPARAMETERS
 # ==========================================
 # Model Architecture
-CLIP_MODEL_NAME = "openai/clip-vit-base-patch16"
 DMODEL = int(os.getenv("DMODEL", "512"))
 NHEADS = int(os.getenv("NHEADS", "8"))
 NLAYERS = int(os.getenv("NLAYERS", "4"))
@@ -100,4 +99,8 @@ NUM_WORKERS = int(os.getenv("NUM_WORKERS", "4"))
 FREQ_THRESHOLD = int(os.getenv("FREQ_THRESHOLD", "5"))
 MAX_LENGTH = int(os.getenv("MAX_LENGTH", "40"))
 BEAM_SIZE = int(os.getenv("BEAM_SIZE", "5"))
-TOP_K_RETRIEVAL = int(os.getenv("TOP_K_RETRIEVAL", "4"))
+
+# RAG Context Encoder
+CTX_NLAYERS = int(os.getenv("CTX_NLAYERS", "2"))
+MAX_CTX_LENGTH = int(os.getenv("MAX_CTX_LENGTH", "80"))
+TOP_K_CAPTIONS = int(os.getenv("TOP_K_CAPTIONS", "4"))
