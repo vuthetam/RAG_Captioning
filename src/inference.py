@@ -19,6 +19,7 @@ def beam_search(
     beam_size: int = 5,
     max_length: int = 40,
     length_penalty: float = 1.0,
+    memory_key_padding_mask: torch.Tensor | None = None,
 ) -> torch.Tensor:
     """Batched beam search given pre-computed encoder memory.
 
@@ -40,6 +41,10 @@ def beam_search(
     # ── Expand memory for k beams per image ───────────────────────────────────
     # (B, S, D) → (B, k, S, D) → (B*k, S, D)
     memory = memory.unsqueeze(1).expand(B, k, S, D).reshape(B * k, S, D)
+    
+    if memory_key_padding_mask is not None:
+        # (B, S) → (B, k, S) → (B*k, S)
+        memory_key_padding_mask = memory_key_padding_mask.unsqueeze(1).expand(B, k, S).reshape(B * k, S)
 
     # ── Initialise beams ──────────────────────────────────────────────────────
     # All beams start with <sos>; only beam-0 per image is active (score=0),
@@ -53,7 +58,11 @@ def beam_search(
 
     # ── Decoding loop ─────────────────────────────────────────────────────────
     for _ in range(max_length - 1):
-        logits = decoder(input_ids=sequences, memory=memory)           # (B*k, t, V)
+        logits = decoder(
+            input_ids=sequences,
+            memory=memory,
+            memory_key_padding_mask=memory_key_padding_mask
+        )                                                              # (B*k, t, V)
         log_probs = F.log_softmax(logits[:, -1, :], dim=-1)            # (B*k, V)
 
         # Finished beams only extend with pad (score unchanged)
@@ -137,18 +146,31 @@ def generate_captions(
     all_captions: dict[int, list[str]] = {}
     iterator = tqdm(dataloader, disable=not show_progress, leave=False, desc="Generating")
 
-    for visual_inputs, *_, image_ids in iterator:
+    for batch in iterator:
+        if len(batch) == 4:
+            visual_inputs, rag_input_ids, rag_attention_mask, image_ids = batch
+            rag_input_ids = rag_input_ids.to(accelerator.device)
+            rag_attention_mask = rag_attention_mask.to(accelerator.device)
+            has_rag = True
+        else:
+            visual_inputs, image_ids = batch
+            has_rag = False
+
         visual_inputs = visual_inputs.to(accelerator.device)
         image_ids = image_ids.to(accelerator.device)
 
         with accelerator.autocast():
-            if base_model.use_precomputed_features:
-                memory = base_model.encode_features(visual_inputs)       # (B, S, D)
+            if has_rag:
+                memory, mem_mask = base_model.encode_memory(visual_inputs, rag_input_ids, rag_attention_mask)
             else:
-                memory = base_model.encode_image(visual_inputs)          # (B, S, D)
+                if base_model.use_precomputed_features:
+                    memory = base_model.encode_features(visual_inputs)       # (B, S, D)
+                else:
+                    memory = base_model.encode_image(visual_inputs)          # (B, S, D)
+                mem_mask = None
 
             sequences = beam_search(
-                base_model.decoder, memory, vocab, beam_size, max_length, length_penalty
+                base_model.decoder, memory, vocab, beam_size, max_length, length_penalty, memory_key_padding_mask=mem_mask
             )                                                # (B_local, max_length)
 
         # Gather both generated sequences and their corresponding IDs

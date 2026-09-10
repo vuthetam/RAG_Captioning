@@ -34,7 +34,7 @@ from src.config import (
     VOCAB_PATH,
     WEIGHT_DECAY,
 )
-from src.dataset import PrecomputedFeatureDataset
+from src.dataset import FeatureCaptionDataset
 from src.engine import evaluate_one_epoch, train_one_epoch
 from src.models.baseline import BaselineCaptioner
 from src.utils import trainable_parameters
@@ -49,10 +49,10 @@ def main() -> None:
     val_df = pd.read_parquet(VAL_DF_PATH)
     vocab = Vocabulary.load(VOCAB_PATH)
 
-    train_dataset = PrecomputedFeatureDataset(
+    train_dataset = FeatureCaptionDataset(
         train_df, vocab, TRAIN_VISUAL_FEATURES_PATH, max_length=MAX_LENGTH
     )
-    val_dataset = PrecomputedFeatureDataset(
+    val_dataset = FeatureCaptionDataset(
         val_df, vocab, VAL_VISUAL_FEATURES_PATH, max_length=MAX_LENGTH
     )
 

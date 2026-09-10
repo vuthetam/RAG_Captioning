@@ -183,9 +183,9 @@ def encode_rag_context(
     return torch.tensor(token_ids, dtype=torch.long), torch.tensor(attention_mask, dtype=torch.long)
 ```
 
-**Class `RAGPrecomputedFeatureDataset`:**
+**Class `RAGFeatureCaptionDataset`:**
 ```python
-class RAGPrecomputedFeatureDataset(PrecomputedFeatureDataset):
+class RAGFeatureCaptionDataset(FeatureCaptionDataset):
     def __init__(self, df, vocab, features_path, rag_contexts_path,
                  max_length, max_ctx_length, top_k):
         super().__init__(df, vocab, features_path, max_length)
@@ -205,9 +205,9 @@ class RAGPrecomputedFeatureDataset(PrecomputedFeatureDataset):
         return visual_feature, input_ids, attention_mask, rag_input_ids, rag_attention_mask
 ```
 
-**Class `RAGPrecomputedFeatureOnlyDataset`** (cho inference):
+**Class `RAGFeatureDataset`** (cho inference):
 ```python
-class RAGPrecomputedFeatureOnlyDataset(PrecomputedFeatureOnlyDataset):
+class RAGFeatureDataset(FeatureDataset):
     def __init__(self, df, features_path, rag_contexts_path,
                  vocab, max_ctx_length, top_k):
         super().__init__(df, features_path)
@@ -271,12 +271,9 @@ Tương tự cho `evaluate_one_epoch`.
 
 ---
 
-### Component 6: Inference hỗ trợ RAG *(chưa implement lần này)*
+### Component 6: Inference hỗ trợ RAG
 
 #### [MODIFY] [inference.py](file:///home/tam/Link%20to%20workspace/ML/rag_captioning/src/inference.py)
-
-> [!NOTE]
-> Giữ plan để reference, sẽ implement sau khi training hoạt động ổn.
 
 `beam_search` **không cần sửa** — nó đã nhận `memory` tensor sẵn rồi. Tuy nhiên cần sửa signature để nhận thêm `memory_key_padding_mask`:
 
@@ -310,7 +307,7 @@ for batch in dataloader:
 #### [NEW] [train_rag.py](file:///home/tam/Link%20to%20workspace/ML/rag_captioning/script/train_rag.py)
 
 Script training mới cho RAG model, tương tự [train_precomputed_features.py](file:///home/tam/Link%20to%20workspace/ML/rag_captioning/script/train_precomputed_features.py) nhưng:
-- Dùng `RAGPrecomputedFeatureDataset` (truyền thêm `rag_contexts_path`, `max_ctx_length`, `top_k`)
+- Dùng `RAGFeatureCaptionDataset` (truyền thêm `rag_contexts_path`, `max_ctx_length`, `top_k`)
 - Dùng `RAGCaptioner` thay vì `BaselineCaptioner`
 - `RUN_MODE = 'rag'` → checkpoint lưu riêng tại `checkpoints/rag/`
 
@@ -354,7 +351,7 @@ assert out.shape == (2, 19, 5000)
 
 # Verify RAG dataset output shapes
 "/home/tam/Link to workspace/ML/.venv/bin/python" -c "
-from src.dataset import RAGPrecomputedFeatureDataset
+from src.dataset import RAGFeatureCaptionDataset
 # ... load data, check output tuple has 5 elements
 "
 ```

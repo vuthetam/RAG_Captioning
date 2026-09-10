@@ -43,7 +43,7 @@ from src.config import (
     MAX_CTX_LENGTH,
     TOP_K_CAPTIONS
 )
-from src.dataset import RAGPrecomputedFeatureDataset
+from src.dataset import RAGFeatureCaptionDataset
 from src.engine import evaluate_one_epoch, train_one_epoch
 from src.models.rag import RAGCaptioner
 from src.utils import trainable_parameters
@@ -58,10 +58,10 @@ def main() -> None:
     val_df = pd.read_parquet(VAL_DF_PATH)
     vocab = Vocabulary.load(VOCAB_PATH)
 
-    train_dataset = RAGPrecomputedFeatureDataset(
+    train_dataset = RAGFeatureCaptionDataset(
         train_df, vocab, TRAIN_VISUAL_FEATURES_PATH, TRAIN_RAG_CONTEXTS_PATH, max_length=MAX_LENGTH, max_ctx_length=MAX_CTX_LENGTH, top_k=TOP_K_CAPTIONS
     )
-    val_dataset = RAGPrecomputedFeatureDataset(
+    val_dataset = RAGFeatureCaptionDataset(
         val_df, vocab, VAL_VISUAL_FEATURES_PATH, VAL_RAG_CONTEXTS_PATH, max_length=MAX_LENGTH, max_ctx_length=MAX_CTX_LENGTH, top_k=TOP_K_CAPTIONS
     )
 

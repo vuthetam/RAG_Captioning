@@ -28,7 +28,7 @@ def create_clip_transform():
     )
 
 
-class MSCOCODataset(Dataset):
+class ImageCaptionDataset(Dataset):
     def __init__(
         self,
         df,
@@ -63,7 +63,7 @@ class MSCOCODataset(Dataset):
 
         return image, input_ids, attention_mask
 
-class ImageOnlyDataset(Dataset):
+class ImageDataset(Dataset):
     def __init__(
         self,
         df,
@@ -117,7 +117,7 @@ class _H5FeatureStore:
         feature = np.asarray(self._h5_file["features"][feature_index])
         return torch.from_numpy(feature)
 
-class PrecomputedFeatureDataset(_H5FeatureStore, Dataset):
+class FeatureCaptionDataset(_H5FeatureStore, Dataset):
     """Caption dataset that uses pre-extracted CLIP visual tokens, not image files."""
 
     def __init__(
@@ -151,7 +151,7 @@ class PrecomputedFeatureDataset(_H5FeatureStore, Dataset):
         )
 
 
-class PrecomputedFeatureOnlyDataset(_H5FeatureStore, Dataset):
+class FeatureDataset(_H5FeatureStore, Dataset):
     """One visual-token tensor per image for caption generation."""
 
     def __init__(self, df, features_path: str | Path) -> None:
@@ -207,7 +207,7 @@ def encode_rag_context(
     return torch.tensor(token_ids, dtype=torch.long), torch.tensor(attention_mask, dtype=torch.long)
 
 
-class RAGPrecomputedFeatureDataset(PrecomputedFeatureDataset):
+class RAGFeatureCaptionDataset(FeatureCaptionDataset):
     def __init__(self, df, vocab, features_path, rag_contexts_path,
                  max_length, max_ctx_length, top_k):
         super().__init__(df, vocab, features_path, max_length)
@@ -231,7 +231,7 @@ class RAGPrecomputedFeatureDataset(PrecomputedFeatureDataset):
         return visual_feature, input_ids, attention_mask, rag_input_ids, rag_attention_mask
 
 
-class RAGPrecomputedFeatureOnlyDataset(PrecomputedFeatureOnlyDataset):
+class RAGFeatureDataset(FeatureDataset):
     def __init__(self, df, features_path, rag_contexts_path,
                  vocab, max_ctx_length, top_k):
         super().__init__(df, features_path)

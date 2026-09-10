@@ -1,4 +1,4 @@
-"""Generate test captions directly from raw images using the online CLIP encoder."""
+"""Generate test captions from pre-extracted CLIP visual-token HDF5 files."""
 
 import json
 import sys
@@ -20,16 +20,16 @@ from src.config import (
     BEST_CHECKPOINT_PATH,
     DMODEL,
     DROPOUT,
-    IMAGES_DIR,
     MAX_LENGTH,
     NHEADS,
     NLAYERS,
     NUM_WORKERS,
     PREDICTIONS_PATH,
     TEST_DF_PATH,
+    TEST_VISUAL_FEATURES_PATH,
     VOCAB_PATH,
 )
-from src.dataset import ImageDataset
+from src.dataset import FeatureDataset
 from src.inference import generate_captions
 from src.models.baseline import BaselineCaptioner
 from src.vocabulary import Vocabulary
@@ -40,8 +40,7 @@ def main() -> None:
     set_seed(42)
     test_df = pd.read_parquet(TEST_DF_PATH)
     vocab = Vocabulary.load(VOCAB_PATH)
-    
-    test_dataset = ImageDataset(test_df, images_dir=IMAGES_DIR)
+    test_dataset = FeatureDataset(test_df, TEST_VISUAL_FEATURES_PATH)
     test_loader = DataLoader(
         test_dataset,
         batch_size=BATCH_SIZE,
@@ -58,11 +57,12 @@ def main() -> None:
         dropout=DROPOUT,
         max_length=MAX_LENGTH,
         pad_idx=vocab.pad_idx(),
-        use_precomputed_features=False,
+        use_precomputed_features=True,
+        visual_feature_dim=test_dataset.feature_shape[-1],
     )
     if not BEST_CHECKPOINT_PATH.is_file():
         raise FileNotFoundError(f"Khong tim thay checkpoint: {BEST_CHECKPOINT_PATH}")
-    load_checkpoint(BEST_CHECKPOINT_PATH, model, device=accelerator.device, strict=False)
+    load_checkpoint(BEST_CHECKPOINT_PATH, model, device=accelerator.device)
 
     model, test_loader = accelerator.prepare(model, test_loader)
     caption_dict = generate_captions(
@@ -74,16 +74,11 @@ def main() -> None:
             {"imgid": int(imgid), "caption": " ".join(caption_dict[imgid])}
             for imgid in test_df["imgid"]
         ]
-        
-        # We can append a suffix to the path if we want to differentiate from precomputed predictions
-        output_path = PREDICTIONS_PATH.with_name(PREDICTIONS_PATH.stem + "_online.json")
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        
-        with output_path.open("w", encoding="utf-8") as output_file:
+        PREDICTIONS_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with PREDICTIONS_PATH.open("w", encoding="utf-8") as output_file:
             json.dump(predictions, output_file, ensure_ascii=False, indent=2)
-        accelerator.print(f"Saved {len(predictions):,} captions to {output_path}")
+        accelerator.print(f"Saved {len(predictions):,} captions to {PREDICTIONS_PATH}")
 
 
 if __name__ == "__main__":
     main()
-
