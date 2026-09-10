@@ -49,12 +49,12 @@ KB_DIR.mkdir(parents=True, exist_ok=True)
 KB_FAISS_INDEX_PATH = KB_DIR / "kb_text_index.faiss"
 KB_METADATA_PATH = KB_DIR / "kb_metadata.parquet"
 
-# RAG
-RAG_DIR = ARTIFACTS_DIR / "rag"
-RAG_DIR.mkdir(parents=True, exist_ok=True)
-TRAIN_RAG_CONTEXTS_PATH = RAG_DIR / "train_rag_contexts.parquet"
-VAL_RAG_CONTEXTS_PATH = RAG_DIR / "val_rag_contexts.parquet"
-TEST_RAG_CONTEXTS_PATH = RAG_DIR / "test_rag_contexts.parquet"
+# RAG Contexts
+RAG_CONTEXTS_DIR = ARTIFACTS_DIR / "rag_contexts"
+RAG_CONTEXTS_DIR.mkdir(parents=True, exist_ok=True)
+TRAIN_RAG_CONTEXTS_PATH = RAG_CONTEXTS_DIR / "train_rag_contexts.parquet"
+VAL_RAG_CONTEXTS_PATH = RAG_CONTEXTS_DIR / "val_rag_contexts.parquet"
+TEST_RAG_CONTEXTS_PATH = RAG_CONTEXTS_DIR / "test_rag_contexts.parquet"
 
 # Visual features
 VISUAL_FEATURES_DIR = Path(os.getenv("VISUAL_FEATURES_DIR", str(ARTIFACTS_DIR / "visual_features")))
