@@ -24,20 +24,28 @@ IMAGES_DIR = Path(
     os.getenv("IMAGES_PATH", str(ROOT_PATH / "dataset" / "mscoco" / "images"))
 )
 
+# Helper to safely create directories, ignoring read-only errors (e.g. on Kaggle /kaggle/input)
+def safe_mkdir(path: Path) -> None:
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        pass
+
 # ==========================================
 # 3. ARTIFACTS PATHS (Intermediates & Outputs)
 # ==========================================
 ARTIFACTS_DIR = Path(os.getenv("ARTIFACTS_DIR", str(ROOT_PATH / "artifacts")))
-ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
+safe_mkdir(ARTIFACTS_DIR)
 
 VOCAB_PATH = ARTIFACTS_DIR / "vocab.json"
 RUN_ARTIFACTS_DIR = ARTIFACTS_DIR / RUN_MODE
+safe_mkdir(RUN_ARTIFACTS_DIR)
 PREDICTIONS_PATH = RUN_ARTIFACTS_DIR / "predictions.json"
 METRICS_PATH = RUN_ARTIFACTS_DIR / "metrics.json"
 
 # Splits
 SPLITS_DIR = ARTIFACTS_DIR / "splits"
-SPLITS_DIR.mkdir(parents=True, exist_ok=True)
+safe_mkdir(SPLITS_DIR)
 TRAIN_DF_PATH = SPLITS_DIR / "train_df.parquet"
 VAL_DF_PATH = SPLITS_DIR / "val_df.parquet"
 TEST_DF_PATH = SPLITS_DIR / "test_df.parquet"
@@ -45,20 +53,20 @@ TEST_DF_PATH = SPLITS_DIR / "test_df.parquet"
 # Knowledge Base (FAISS)
 KB_MODEL_ID = "openai/clip-vit-large-patch14-336"
 KB_DIR = ARTIFACTS_DIR / "kb"
-KB_DIR.mkdir(parents=True, exist_ok=True)
+safe_mkdir(KB_DIR)
 KB_FAISS_INDEX_PATH = KB_DIR / "kb_text_index.faiss"
 KB_METADATA_PATH = KB_DIR / "kb_metadata.parquet"
 
 # RAG Contexts
 RAG_CONTEXTS_DIR = ARTIFACTS_DIR / "rag_contexts"
-RAG_CONTEXTS_DIR.mkdir(parents=True, exist_ok=True)
+safe_mkdir(RAG_CONTEXTS_DIR)
 TRAIN_RAG_CONTEXTS_PATH = RAG_CONTEXTS_DIR / "train_rag_contexts.parquet"
 VAL_RAG_CONTEXTS_PATH = RAG_CONTEXTS_DIR / "val_rag_contexts.parquet"
 TEST_RAG_CONTEXTS_PATH = RAG_CONTEXTS_DIR / "test_rag_contexts.parquet"
 
 # Visual features
 VISUAL_FEATURES_DIR = Path(os.getenv("VISUAL_FEATURES_DIR", str(ARTIFACTS_DIR / "visual_features")))
-VISUAL_FEATURES_DIR.mkdir(parents=True, exist_ok=True)
+safe_mkdir(VISUAL_FEATURES_DIR)
 TRAIN_VISUAL_FEATURES_PATH = VISUAL_FEATURES_DIR / "train_visual_features.h5"
 VAL_VISUAL_FEATURES_PATH = VISUAL_FEATURES_DIR / "val_visual_features.h5"
 TEST_VISUAL_FEATURES_PATH = VISUAL_FEATURES_DIR / "test_visual_features.h5"
@@ -73,7 +81,7 @@ CHECKPOINTS_DIR = Path(os.getenv("CHECKPOINTS_DIR", str(ROOT_PATH / "checkpoints
 
 # Tự động chia nhánh Checkpoint theo RUN_MODE ('baseline' hoặc 'rag')
 RUN_CHECKPOINT_DIR = CHECKPOINTS_DIR / RUN_MODE
-RUN_CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
+safe_mkdir(RUN_CHECKPOINT_DIR)
 
 LAST_CHECKPOINT_PATH = RUN_CHECKPOINT_DIR / "last_checkpoint.pth"
 BEST_CHECKPOINT_PATH = RUN_CHECKPOINT_DIR / "best_checkpoint.pth"
