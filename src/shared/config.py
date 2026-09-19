@@ -51,7 +51,7 @@ VAL_DF_PATH = SPLITS_DIR / "val_df.parquet"
 TEST_DF_PATH = SPLITS_DIR / "test_df.parquet"
 
 # Knowledge Base (FAISS)
-KB_MODEL_ID = "openai/clip-vit-large-patch14-336"
+KB_MODEL_ID = "openai/clip-vit-base-patch16"
 KB_DIR = ARTIFACTS_DIR / "kb"
 safe_mkdir(KB_DIR)
 KB_FAISS_INDEX_PATH = KB_DIR / "kb_text_index.faiss"

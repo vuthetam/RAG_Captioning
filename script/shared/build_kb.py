@@ -1,23 +1,33 @@
 import sys
+sys.stdout.reconfigure(encoding="utf-8")
 from pathlib import Path
 import pandas as pd
 import torch
 from tqdm import tqdm
 from transformers import CLIPProcessor, CLIPModel
 import faiss
+import spacy
 
 # Đảm bảo import được src
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.shared.config import TRAIN_DF_PATH, KB_MODEL_ID, KB_FAISS_INDEX_PATH, KB_METADATA_PATH
 from src.shared.utils import extract_clip_features
 
-
 def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Đang sử dụng device: {device}")
+    
+    print("Loading spaCy model (en_core_web_sm)...")
+    try:
+        nlp = spacy.load("en_core_web_sm")
+    except OSError:
+        import subprocess
+        print("Model not found. Downloading...")
+        subprocess.check_call([sys.executable, "-m", "spacy", "download", "en_core_web_sm"])
+        nlp = spacy.load("en_core_web_sm")
 
     # 1. Load CLIP Model
     print(f"Loading CLIP model ({KB_MODEL_ID})...")
@@ -33,11 +43,30 @@ def main():
     # Đảm bảo tương thích: tìm xem cột chứa văn bản tên là 'caption' hay 'raw'
     cap_col = 'caption' if 'caption' in train_df.columns else 'raw'
     
-    # Chỉ giữ lại các cột cần thiết cho Metadata
-    metadata_df = train_df[['imgid', 'filepath', 'filename', cap_col]].copy()
+    # Chỉ giữ lại các cột cần thiết cho Metadata (thêm 'tokens' có sẵn)
+    metadata_df = train_df[['imgid', 'filepath', 'filename', cap_col, 'tokens']].copy()
     metadata_df.rename(columns={cap_col: 'caption'}, inplace=True)
     
     print(f"Tổng số caption cần mã hóa: {len(metadata_df):,}")
+
+    # --- NEW: NLP Extraction ---
+    print("Trích xuất Objects, Relations (spaCy)...")
+    objects_list = []
+    relations_list = []
+    
+    # Process captions efficiently using nlp.pipe
+    captions = metadata_df['caption'].tolist()
+    
+    for doc in tqdm(nlp.pipe(captions, batch_size=2048), total=len(captions), desc="NLP Parsing", leave=False):
+        # Dùng dict.fromkeys để loại bỏ từ trùng lặp nhưng vẫn giữ đúng thứ tự xuất hiện
+        objs = list(dict.fromkeys([token.lemma_.lower() for token in doc if token.pos_ in ["NOUN", "PROPN"]]))
+        rels = list(dict.fromkeys([token.lemma_.lower() for token in doc if token.pos_ in ["VERB", "ADP"]]))
+        objects_list.append(objs)
+        relations_list.append(rels)
+        
+    metadata_df['objects'] = objects_list
+    metadata_df['relations'] = relations_list
+    # ---------------------------
 
     # 3. Khởi tạo FAISS Index
     # CLIP large có dimension = 768. IndexFlatIP dùng cho Cosine Similarity.
