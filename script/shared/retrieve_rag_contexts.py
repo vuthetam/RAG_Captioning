@@ -88,24 +88,37 @@ def process_and_retrieve(df_path, output_parquet_path, encoder, processor, index
             for idx, imgid in enumerate(gathered_ids):
                 retrieved_ids = indices[idx]
                 
-                # Lấy ID gốc của ảnh, caption tương ứng dựa vào id của faiss
-                retrieved_imgids = kb_metadata.iloc[retrieved_ids]['imgid'].tolist()
-                raw_texts = kb_metadata.iloc[retrieved_ids]['caption'].tolist()
+                # Lấy ID gốc của ảnh, caption và các mảng NLP tương ứng dựa vào id của faiss
+                kb_slice = kb_metadata.iloc[retrieved_ids]
+                retrieved_imgids = kb_slice['imgid'].tolist()
+                raw_texts = kb_slice['caption'].tolist()
+                raw_tokens = kb_slice['tokens'].tolist()
+                raw_objects = kb_slice['objects'].tolist()
+                raw_relations = kb_slice['relations'].tolist()
                 raw_scores = distances[idx].tolist()
                 
                 valid_texts = []
+                valid_tokens = []
+                valid_objects = []
+                valid_relations = []
                 valid_scores = []
                 
-                for r_id, txt, score in zip(retrieved_imgids, raw_texts, raw_scores):
-                    if r_id != imgid: # Loại bỏ các caption của chính bức ảnh truy xuất
+                for r_id, txt, tok, obj, rel, score in zip(retrieved_imgids, raw_texts, raw_tokens, raw_objects, raw_relations, raw_scores):
+                    if r_id != imgid: # Loại bỏ các caption của chính bức ảnh đang query
                         valid_texts.append(txt)
+                        valid_tokens.append(tok)
+                        valid_objects.append(obj)
+                        valid_relations.append(rel)
                         valid_scores.append(score)
                 
-                # Cắt đúng Top TARGET_K câu xịn nhất (sau khi đã lọc)
+                # Cắt đúng Top TARGET_K
                 results.append({
                     'imgid': imgid,
-                    'retrieved_texts': valid_texts[:TARGET_K],
-                    'retrieved_scores': valid_scores[:TARGET_K]
+                    'captions': valid_texts[:TARGET_K],
+                    'tokens': valid_tokens[:TARGET_K],
+                    'objects': valid_objects[:TARGET_K],
+                    'relations': valid_relations[:TARGET_K],
+                    'retrieval_scores': valid_scores[:TARGET_K]
                 })
 
     # Sau khi chạy xong toàn bộ batch, GPU 0 lưu file
