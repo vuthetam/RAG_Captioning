@@ -1,7 +1,7 @@
 from torch import Tensor, nn
-from src.encoder import CLIPViTB16Encoder
-from src.decoder import TransformerCaptionDecoder
-from src.visual_projector import VisualProjector
+from src.v1.encoder import CLIPViTB16Encoder
+from src.v1.decoder import TransformerCaptionDecoder
+from src.v1.visual_projector import VisualProjector
 
 class BaselineCaptioner(nn.Module):
     def __init__(

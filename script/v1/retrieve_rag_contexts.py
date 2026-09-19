@@ -16,13 +16,13 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.config import (
+from src.shared.config import (
     TRAIN_DF_PATH, VAL_DF_PATH, TEST_DF_PATH,
     TRAIN_RAG_CONTEXTS_PATH, VAL_RAG_CONTEXTS_PATH, TEST_RAG_CONTEXTS_PATH,
     KB_MODEL_ID, KB_FAISS_INDEX_PATH, KB_METADATA_PATH,
     IMAGES_DIR
 )
-from src.utils import extract_clip_features
+from src.shared.utils import extract_clip_features
 
 TARGET_K = 8
 

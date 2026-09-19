@@ -15,13 +15,13 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.config import (
+from src.shared.config import (
     TRAIN_DF_PATH, VAL_DF_PATH, TEST_DF_PATH,
     TRAIN_VISUAL_FEATURES_PATH, VAL_VISUAL_FEATURES_PATH, TEST_VISUAL_FEATURES_PATH,
     IMAGES_DIR,
 )
-from src.encoder import CLIPViTB16Encoder
-from src.dataset import create_clip_transform
+from src.v1.encoder import CLIPViTB16Encoder
+from src.v1.dataset import create_clip_transform
 
 class ImageFeatureDataset(Dataset):
     def __init__(self, df, images_path, transform):

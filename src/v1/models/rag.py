@@ -1,8 +1,8 @@
 import torch
 from torch import Tensor
 
-from src.models.baseline import BaselineCaptioner
-from src.encoder import TextContextEncoder
+from src.v1.models.baseline import BaselineCaptioner
+from src.v1.encoder import TextContextEncoder
 
 class RAGCaptioner(BaselineCaptioner):
     def __init__(

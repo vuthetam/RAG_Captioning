@@ -3,8 +3,8 @@ import torch
 from torch import Tensor, nn
 from transformers import CLIPVisionModel
 
-from src.config import CTX_NLAYERS
-from src.decoder import PositionalEncoding
+from src.shared.config import CTX_NLAYERS
+from src.v1.decoder import PositionalEncoding
 
 
 class CLIPViTB16Encoder(nn.Module):

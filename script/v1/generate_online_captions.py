@@ -13,8 +13,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.checkpoint import load_checkpoint
-from src.config import (
+from src.shared.checkpoint import load_checkpoint
+from src.shared.config import (
     BATCH_SIZE,
     BEAM_SIZE,
     BEST_CHECKPOINT_PATH,
@@ -29,10 +29,10 @@ from src.config import (
     TEST_DF_PATH,
     VOCAB_PATH,
 )
-from src.dataset import ImageDataset
-from src.inference import generate_captions
-from src.models.baseline import BaselineCaptioner
-from src.vocabulary import Vocabulary
+from src.v1.dataset import ImageDataset
+from src.v1.inference import generate_captions
+from src.v1.models.baseline import BaselineCaptioner
+from src.shared.vocabulary import Vocabulary
 
 
 def main() -> None:

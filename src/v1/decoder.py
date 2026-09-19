@@ -3,7 +3,7 @@ import math
 import torch
 from torch import Tensor, nn
 
-from src.config import DMODEL, NHEADS, NLAYERS
+from src.shared.config import DMODEL, NHEADS, NLAYERS
 
 
 class PositionalEncoding(nn.Module):

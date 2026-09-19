@@ -1,4 +1,4 @@
-"""Generate test captions using the RAG captioner and pre-extracted visual features."""
+"""Generate test captions from pre-extracted CLIP visual-token HDF5 files."""
 
 import json
 import sys
@@ -13,8 +13,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.checkpoint import load_checkpoint
-from src.config import (
+from src.shared.checkpoint import load_checkpoint
+from src.shared.config import (
     BATCH_SIZE,
     BEAM_SIZE,
     BEST_CHECKPOINT_PATH,
@@ -28,15 +28,11 @@ from src.config import (
     TEST_DF_PATH,
     TEST_VISUAL_FEATURES_PATH,
     VOCAB_PATH,
-    TEST_RAG_CONTEXTS_PATH,
-    CTX_NLAYERS,
-    MAX_CTX_LENGTH,
-    TOP_K_CAPTIONS,
 )
-from src.dataset import RAGFeatureDataset
-from src.inference import generate_captions
-from src.models.rag import RAGCaptioner
-from src.vocabulary import Vocabulary
+from src.v1.dataset import FeatureDataset
+from src.v1.inference import generate_captions
+from src.v1.models.baseline import BaselineCaptioner
+from src.shared.vocabulary import Vocabulary
 
 
 def main() -> None:
@@ -44,12 +40,7 @@ def main() -> None:
     set_seed(42)
     test_df = pd.read_parquet(TEST_DF_PATH)
     vocab = Vocabulary.load(VOCAB_PATH)
-    
-    test_dataset = RAGFeatureDataset(
-        test_df, TEST_VISUAL_FEATURES_PATH, TEST_RAG_CONTEXTS_PATH,
-        vocab, max_ctx_length=MAX_CTX_LENGTH, top_k=TOP_K_CAPTIONS
-    )
-    
+    test_dataset = FeatureDataset(test_df, TEST_VISUAL_FEATURES_PATH)
     test_loader = DataLoader(
         test_dataset,
         batch_size=BATCH_SIZE,
@@ -58,7 +49,7 @@ def main() -> None:
         pin_memory=True,
     )
 
-    model = RAGCaptioner(
+    model = BaselineCaptioner(
         vocab_size=len(vocab),
         d_model=DMODEL,
         nheads=NHEADS,
@@ -68,10 +59,7 @@ def main() -> None:
         pad_idx=vocab.pad_idx(),
         use_precomputed_features=True,
         visual_feature_dim=test_dataset.feature_shape[-1],
-        ctx_nlayers=CTX_NLAYERS,
-        max_ctx_length=MAX_CTX_LENGTH,
     )
-    
     if not BEST_CHECKPOINT_PATH.is_file():
         raise FileNotFoundError(f"Khong tim thay checkpoint: {BEST_CHECKPOINT_PATH}")
     load_checkpoint(BEST_CHECKPOINT_PATH, model, device=accelerator.device)
@@ -94,4 +82,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

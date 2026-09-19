@@ -11,8 +11,8 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.config import TRAIN_DF_PATH, KB_MODEL_ID, KB_FAISS_INDEX_PATH, KB_METADATA_PATH
-from src.utils import extract_clip_features
+from src.shared.config import TRAIN_DF_PATH, KB_MODEL_ID, KB_FAISS_INDEX_PATH, KB_METADATA_PATH
+from src.shared.utils import extract_clip_features
 
 
 def main():

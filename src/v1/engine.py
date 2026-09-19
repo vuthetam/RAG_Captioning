@@ -7,7 +7,7 @@ from accelerate import Accelerator
 from torch import nn
 from tqdm.auto import tqdm
 
-from src.utils import trainable_parameters
+from src.shared.utils import trainable_parameters
 
 
 def _step(

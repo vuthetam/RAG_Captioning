@@ -13,8 +13,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.checkpoint import load_checkpoint, save_checkpoint
-from src.config import (
+from src.shared.checkpoint import load_checkpoint, save_checkpoint
+from src.shared.config import (
     BATCH_SIZE,
     BEST_CHECKPOINT_PATH,
     DMODEL,
@@ -28,16 +28,17 @@ from src.config import (
     NUM_EPOCHS,
     NUM_WORKERS,
     TRAIN_DF_PATH,
-    IMAGES_DIR,
+    TRAIN_VISUAL_FEATURES_PATH,
     VAL_DF_PATH,
+    VAL_VISUAL_FEATURES_PATH,
     VOCAB_PATH,
     WEIGHT_DECAY,
 )
-from src.dataset import ImageCaptionDataset
-from src.engine import evaluate_one_epoch, train_one_epoch
-from src.models.baseline import BaselineCaptioner
-from src.utils import trainable_parameters
-from src.vocabulary import Vocabulary
+from src.v1.dataset import FeatureCaptionDataset
+from src.v1.engine import evaluate_one_epoch, train_one_epoch
+from src.v1.models.baseline import BaselineCaptioner
+from src.shared.utils import trainable_parameters
+from src.shared.vocabulary import Vocabulary
 
 
 def main() -> None:
@@ -48,11 +49,11 @@ def main() -> None:
     val_df = pd.read_parquet(VAL_DF_PATH)
     vocab = Vocabulary.load(VOCAB_PATH)
 
-    train_dataset = ImageCaptionDataset(
-        train_df, vocab, images_dir=IMAGES_DIR, max_length=MAX_LENGTH
+    train_dataset = FeatureCaptionDataset(
+        train_df, vocab, TRAIN_VISUAL_FEATURES_PATH, max_length=MAX_LENGTH
     )
-    val_dataset = ImageCaptionDataset(
-        val_df, vocab, images_dir=IMAGES_DIR, max_length=MAX_LENGTH
+    val_dataset = FeatureCaptionDataset(
+        val_df, vocab, VAL_VISUAL_FEATURES_PATH, max_length=MAX_LENGTH
     )
 
     train_loader = DataLoader(
@@ -79,7 +80,9 @@ def main() -> None:
         dropout=DROPOUT,
         max_length=MAX_LENGTH,
         pad_idx=vocab.pad_idx(),
-        use_precomputed_features=False,
+        use_precomputed_features=True,
+        visual_feature_dim=train_dataset.feature_shape[-1],
+
     )
     optimizer = torch.optim.AdamW(
         trainable_parameters(model), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY
@@ -98,7 +101,7 @@ def main() -> None:
     )
     accelerator.print(
         f"train rows={len(train_dataset):,}; val rows={len(val_dataset):,}; "
-        f"trainable params="
+        f"feature shape={train_dataset.feature_shape}; trainable params="
         f"{sum(parameter.numel() for parameter in trainable_parameters(model)):,}"
     )
 

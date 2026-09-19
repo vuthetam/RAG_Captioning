@@ -11,8 +11,8 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 from torchvision.transforms import InterpolationMode
 
-from src.config import IMAGES_DIR
-from src.vocabulary import Vocabulary
+from src.shared.config import IMAGES_DIR
+from src.shared.vocabulary import Vocabulary
 
 
 def create_clip_transform():

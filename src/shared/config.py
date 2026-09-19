@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 # ==========================================
 # 1. ROOT & ENVIRONMENT
 # ==========================================
-ROOT_PATH = Path(__file__).resolve().parent.parent
+ROOT_PATH = Path(__file__).resolve().parent.parent.parent
 ROOT_DIR = ROOT_PATH
 ENV_PATH = ROOT_PATH / ".env"
 

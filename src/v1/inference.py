@@ -8,7 +8,7 @@ from accelerate import Accelerator
 from torch import nn
 from tqdm.auto import tqdm
 
-from src.vocabulary import Vocabulary
+from src.shared.vocabulary import Vocabulary
 
 
 @torch.no_grad()

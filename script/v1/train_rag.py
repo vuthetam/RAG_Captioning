@@ -1,4 +1,4 @@
-"""Train the caption decoder from pre-extracted CLIP visual-token HDF5 files."""
+"""Train the RAG captioner from pre-extracted CLIP visual-token HDF5 files."""
 
 import sys
 from pathlib import Path
@@ -13,8 +13,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.checkpoint import load_checkpoint, save_checkpoint
-from src.config import (
+from src.shared.checkpoint import load_checkpoint, save_checkpoint
+from src.shared.config import (
     BATCH_SIZE,
     BEST_CHECKPOINT_PATH,
     DMODEL,
@@ -33,12 +33,17 @@ from src.config import (
     VAL_VISUAL_FEATURES_PATH,
     VOCAB_PATH,
     WEIGHT_DECAY,
+    TRAIN_RAG_CONTEXTS_PATH,
+    VAL_RAG_CONTEXTS_PATH,
+    CTX_NLAYERS,
+    MAX_CTX_LENGTH,
+    TOP_K_CAPTIONS
 )
-from src.dataset import FeatureCaptionDataset
-from src.engine import evaluate_one_epoch, train_one_epoch
-from src.models.baseline import BaselineCaptioner
-from src.utils import trainable_parameters
-from src.vocabulary import Vocabulary
+from src.v1.dataset import RAGFeatureCaptionDataset
+from src.v1.engine import evaluate_one_epoch, train_one_epoch
+from src.v1.models.rag import RAGCaptioner
+from src.shared.utils import trainable_parameters
+from src.shared.vocabulary import Vocabulary
 
 
 def main() -> None:
@@ -49,11 +54,11 @@ def main() -> None:
     val_df = pd.read_parquet(VAL_DF_PATH)
     vocab = Vocabulary.load(VOCAB_PATH)
 
-    train_dataset = FeatureCaptionDataset(
-        train_df, vocab, TRAIN_VISUAL_FEATURES_PATH, max_length=MAX_LENGTH
+    train_dataset = RAGFeatureCaptionDataset(
+        train_df, vocab, TRAIN_VISUAL_FEATURES_PATH, TRAIN_RAG_CONTEXTS_PATH, max_length=MAX_LENGTH, max_ctx_length=MAX_CTX_LENGTH, top_k=TOP_K_CAPTIONS
     )
-    val_dataset = FeatureCaptionDataset(
-        val_df, vocab, VAL_VISUAL_FEATURES_PATH, max_length=MAX_LENGTH
+    val_dataset = RAGFeatureCaptionDataset(
+        val_df, vocab, VAL_VISUAL_FEATURES_PATH, VAL_RAG_CONTEXTS_PATH, max_length=MAX_LENGTH, max_ctx_length=MAX_CTX_LENGTH, top_k=TOP_K_CAPTIONS
     )
 
     train_loader = DataLoader(
@@ -72,7 +77,7 @@ def main() -> None:
         pin_memory=True,
     )
 
-    model = BaselineCaptioner(
+    model = RAGCaptioner(
         vocab_size=len(vocab),
         d_model=DMODEL,
         nheads=NHEADS,
@@ -82,8 +87,10 @@ def main() -> None:
         pad_idx=vocab.pad_idx(),
         use_precomputed_features=True,
         visual_feature_dim=train_dataset.feature_shape[-1],
-
+        ctx_nlayers=CTX_NLAYERS,
+        max_ctx_length=MAX_CTX_LENGTH,
     )
+    
     optimizer = torch.optim.AdamW(
         trainable_parameters(model), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY
     )
@@ -128,3 +135,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
