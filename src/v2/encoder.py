@@ -66,52 +66,62 @@ class RagContextEncoder(nn.Module):
 class RagFusionEncoder(nn.Module):
     """
     Lai tạo Ảnh và Text RAG thông qua Soft Filter (Cross-Attention) và Dynamic Gating (Sigmoid).
+    Đã được nâng cấp chuẩn kiến trúc Transformer với LayerNorm và FeedForward Network.
     """
-    def __init__(self, d_model: int, nhead: int = 8):
+    def __init__(self, d_model: int, nhead: int = 8, dropout: float = 0.1):
         super().__init__()
         self.d_model = d_model
         
         # 1. Soft Filter (Cross Attention)
-        # batch_first=True để nhận input [B, SeqLen, d_model]
-        self.cross_attn = nn.MultiheadAttention(embed_dim=d_model, num_heads=nhead, batch_first=True)
+        self.cross_attn = nn.MultiheadAttention(embed_dim=d_model, num_heads=nhead, dropout=dropout, batch_first=True)
         
-        # 2. Dynamic Gating (Context-Aware Sigmoid Gate)
-        # Nhận đầu vào là [V ; C_filtered] -> kích thước là 2 * d_model
+        # 2. Dynamic Gating
         self.gate_linear = nn.Linear(2 * d_model, d_model)
-        
-        # Zero-Initialization cho gate:
-        # Bắt đầu với trọng số bằng 0, bias dương để lúc mới train Gate ưu tiên Ảnh (V) giống hệt V1.
+        # Bắt đầu với bias = 0.0 -> sigmoid(0) = 0.5 (Tỉ lệ 50/50 để gradient chảy qua tốt nhất)
         nn.init.zeros_(self.gate_linear.weight)
-        nn.init.constant_(self.gate_linear.bias, 5.0)  # sigmoid(5) ~ 0.99
+        nn.init.constant_(self.gate_linear.bias, 0.0)
         self.sigmoid = nn.Sigmoid()
+        
+        # 3. Transformer Add-ons (LayerNorm, Dropout, FFN)
+        self.norm1 = nn.LayerNorm(d_model)
+        self.norm2 = nn.LayerNorm(d_model)
+        self.dropout = nn.Dropout(dropout)
+        
+        self.ffn = nn.Sequential(
+            nn.Linear(d_model, d_model * 4),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(d_model * 4, d_model)
+        )
 
     def forward(self, image_features, encoded_context, context_padding_mask):
         """
         Inputs:
-            image_features       : [B, 196, d_model] (Query) - Note: Đã là 3D từ Patch Features
+            image_features       : [B, 196, d_model] (Query)
             encoded_context      : [B, 240, d_model] (Key/Value)
             context_padding_mask : [B, 240] (True ở vị trí là padding dư thừa)
         """
-        # --- BƯỚC 1: SOFT FILTER (Lọc từ khóa) ---
-        # Q = Ảnh, K = V = Context
-        # attn_output shape: [B, 196, d_model]
-        c_filtered, _ = self.cross_attn(
+        # --- BƯỚC 1: CROSS ATTENTION ---
+        c_attn, _ = self.cross_attn(
             query=image_features,
             key=encoded_context,
             value=encoded_context,
             key_padding_mask=context_padding_mask
         )
+        c_attn = self.dropout(c_attn)
 
-        # --- BƯỚC 2: DYNAMIC GATING (Hòa trộn) ---
-        # Nối Ảnh gốc (V) và Ảnh đã lọc (C_filtered) -> [B, 196, 2 * d_model]
-        combined_features = torch.cat([image_features, c_filtered], dim=-1)
-        
-        # Tính toán cổng G (từ 0 đến 1)
-        # gate shape: [B, 196, d_model]
+        # --- BƯỚC 2: DYNAMIC GATING (Residual) ---
+        combined_features = torch.cat([image_features, c_attn], dim=-1)
         g = self.sigmoid(self.gate_linear(combined_features))
         
-        # Hợp nhất: F = g * V + (1 - g) * C_filtered
-        fused_memory = g * image_features + (1 - g) * c_filtered
+        fused = g * image_features + (1 - g) * c_attn
+        
+        # Norm 1
+        fused = self.norm1(fused)
+
+        # --- BƯỚC 3: FEED-FORWARD NETWORK ---
+        ffn_out = self.ffn(fused)
+        fused_memory = self.norm2(fused + self.dropout(ffn_out))
         
         return fused_memory
 

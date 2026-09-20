@@ -10,7 +10,8 @@ ROOT_DIR = ROOT_PATH
 ENV_PATH = ROOT_PATH / ".env"
 
 if ENV_PATH.exists():
-    load_dotenv(ENV_PATH)
+    # Thêm override=True để Python luôn đọc file .env mới nhất, bỏ qua cache của Terminal
+    load_dotenv(ENV_PATH, override=True)
 
 RUN_MODE = os.getenv("RUN_MODE", "baseline")  # 'baseline' hoặc 'rag'
 

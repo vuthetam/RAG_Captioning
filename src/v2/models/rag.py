@@ -46,10 +46,11 @@ class RagModelV2(nn.Module):
             num_layers=2
         )
         
-        # 4. Fusion Encoder (Soft Filter + Cổng Dynamic Gating)
+        # 4. Fusion Encoder (Soft Filter + Cổng Dynamic Gating + LayerNorm + FFN)
         self.fusion_encoder = RagFusionEncoder(
             d_model=d_model,
-            nhead=nheads
+            nhead=nheads,
+            dropout=dropout
         )
 
     def forward(

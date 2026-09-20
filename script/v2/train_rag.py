@@ -165,7 +165,8 @@ def main() -> None:
                     epoch + 1, train_loss, best_val_loss, accelerator,
                 )
 
-
+    # Đóng kết nối multi-GPU gọn gàng để tránh warning của PyTorch
+    accelerator.end_training()
 if __name__ == "__main__":
     main()
 
