@@ -112,3 +112,8 @@ BEAM_SIZE = int(os.getenv("BEAM_SIZE", "5"))
 CTX_NLAYERS = int(os.getenv("CTX_NLAYERS", "2"))
 MAX_CTX_LENGTH = int(os.getenv("MAX_CTX_LENGTH", "80"))
 TOP_K_CAPTIONS = int(os.getenv("TOP_K_CAPTIONS", "4"))
+
+# RAG V2 Context Field Lengths
+MAX_CTX_LEN = int(os.getenv("MAX_CTX_LEN", "40"))   # Tokens của mỗi context
+MAX_OBJ_LEN = int(os.getenv("MAX_OBJ_LEN", "10"))   # Objects của mỗi context
+MAX_REL_LEN = int(os.getenv("MAX_REL_LEN", "10"))   # Relations của mỗi context

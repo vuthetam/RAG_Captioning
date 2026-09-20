@@ -19,8 +19,7 @@ from src.shared.config import (
     TRAIN_VISUAL_FEATURES_PATH, VAL_VISUAL_FEATURES_PATH, TEST_VISUAL_FEATURES_PATH,
     IMAGES_DIR
 )
-from src.v1.encoder import CLIPViTB16Encoder
-from src.v1.dataset import create_clip_transform
+from src.shared.encoder import CLIPViTB16Encoder, create_clip_transform
 
 class ImageFeatureDataset(Dataset):
     def __init__(self, df, images_path, transform):

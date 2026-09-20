@@ -1,10 +1,6 @@
 import math
-
 import torch
 from torch import Tensor, nn
-
-from src.shared.config import DMODEL, NHEADS, NLAYERS
-
 
 class PositionalEncoding(nn.Module):
     def __init__(self, d_model: int, max_len: int = 100) -> None:
@@ -24,9 +20,9 @@ class TransformerCaptionDecoder(nn.Module):
     def __init__(
         self,
         vocab_size: int,
-        d_model: int = DMODEL,
-        nhead: int = NHEADS,
-        num_layers: int = NLAYERS,
+        d_model: int = 512,
+        nhead: int = 8,
+        num_layers: int = 4,
         dropout: float = 0.1,
         max_length: int = 40,
         pad_idx: int = 0,
@@ -67,7 +63,10 @@ class TransformerCaptionDecoder(nn.Module):
         tgt_mask = self._generate_square_subsequent_mask(x.size(1), x.device)
         tgt_key_padding_mask = None
         if attention_mask is not None:
-            tgt_key_padding_mask = attention_mask == 0
+            # Chuyển sang float additive mask (-inf) để đồng kiểu với tgt_mask
+            bool_mask = (attention_mask == 0)
+            tgt_key_padding_mask = torch.zeros_like(attention_mask, dtype=torch.float)
+            tgt_key_padding_mask = tgt_key_padding_mask.masked_fill(bool_mask, float("-inf"))
 
         out = self.decoder(
             tgt=x,
@@ -77,3 +76,4 @@ class TransformerCaptionDecoder(nn.Module):
             memory_key_padding_mask=memory_key_padding_mask,
         )
         return self.out_fc(out)
+
