@@ -100,3 +100,24 @@ class RagModelV2(nn.Module):
         
         return logits
 
+    def encode_memory(
+        self,
+        visual_features: Tensor,        # [B, 197, 768]
+        k_ctx_tokens: Tensor,           # [B, K, max_ctx_len]
+        k_ctx_objects: Tensor,          # [B, K, max_obj_len]
+        k_ctx_relations: Tensor,        # [B, K, max_rel_len]
+        include_cls_token: bool = False,
+    ) -> Tensor:
+        """Trả về fused_memory [B, 196, d_model] để mớm cho Beam Search."""
+        visual_features = visual_features.float()
+        if not include_cls_token:
+            visual_features = visual_features[:, 1:, :]
+        image_features = self.visual_projector(visual_features)
+
+        encoded_context, context_padding_mask = self.context_encoder(
+            k_ctx_tokens, k_ctx_objects, k_ctx_relations
+        )
+        fused_memory = self.fusion_encoder(
+            image_features, encoded_context, context_padding_mask
+        )
+        return fused_memory  # [B, 196, d_model]
