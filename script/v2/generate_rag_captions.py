@@ -102,6 +102,8 @@ def main() -> None:
             json.dump(predictions, f, ensure_ascii=False, indent=2)
         accelerator.print(f"Saved {len(predictions):,} captions -> {PREDICTIONS_PATH}")
 
+    accelerator.wait_for_everyone()
+    accelerator.end_training()
 
 if __name__ == "__main__":
     main()
