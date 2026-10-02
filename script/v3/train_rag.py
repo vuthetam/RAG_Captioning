@@ -1,8 +1,14 @@
 import os
+from pathlib import Path
 import torch
 import pandas as pd
 from accelerate import Accelerator
 from torch.utils.data import DataLoader
+import sys
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.shared.config import (
     VOCAB_PATH,
@@ -166,6 +172,8 @@ def main():
                 accelerator.print(f" 🏆 New Best Checkpoint Saved: {BEST_CHECKPOINT_PATH}")
 
     accelerator.print("\n🎉 TRAINING COMPLETE! 🎉")
+    accelerator.wait_for_everyone()
+    accelerator.end_training()
 
 
 if __name__ == "__main__":
