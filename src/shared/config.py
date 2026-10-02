@@ -38,7 +38,7 @@ def safe_mkdir(path: Path) -> None:
 ARTIFACTS_DIR = Path(os.getenv("ARTIFACTS_DIR", str(ROOT_PATH / "artifacts")))
 safe_mkdir(ARTIFACTS_DIR)
 
-VOCAB_PATH = ARTIFACTS_DIR / "vocab.json"
+VOCAB_PATH = ARTIFACTS_DIR / "vocab_v3.json"
 RUN_ARTIFACTS_DIR = ARTIFACTS_DIR / RUN_MODE
 safe_mkdir(RUN_ARTIFACTS_DIR)
 PREDICTIONS_PATH = RUN_ARTIFACTS_DIR / "predictions.json"
@@ -118,3 +118,6 @@ TOP_K_CAPTIONS = int(os.getenv("TOP_K_CAPTIONS", "4"))
 MAX_CTX_LEN = int(os.getenv("MAX_CTX_LEN", "40"))   # Tokens của mỗi context
 MAX_OBJ_LEN = int(os.getenv("MAX_OBJ_LEN", "10"))   # Objects của mỗi context
 MAX_REL_LEN = int(os.getenv("MAX_REL_LEN", "10"))   # Relations của mỗi context
+
+# RAG V3 Settings
+MAX_RAG_LEN = int(os.getenv("MAX_RAG_LEN", "64"))
