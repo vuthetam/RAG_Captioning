@@ -72,12 +72,14 @@ class RagModelV3(nn.Module):
         max_length: int = 40,
         max_rag_len: int = 64,
         top_k: int = 4,
-        visual_feature_dim: int = 768
+        visual_feature_dim: int = 768,
+        include_cls_token: bool = False
     ) -> None:
         super().__init__()
         
         self.top_k = top_k
         self.max_rag_len = max_rag_len
+        self.include_cls_token = include_cls_token
         
         # 1. Image Projector (Ép chiều CLIP 768 -> 512)
         self.visual_projector = nn.Linear(visual_feature_dim, d_model)
@@ -116,7 +118,10 @@ class RagModelV3(nn.Module):
         - rag_input_ids: [B, K, L]
         '''
         # 1. Luồng Image
-        image_memory = self.visual_projector(visual_features.float()) # [B, 197, D]
+        if not self.include_cls_token:
+            visual_features = visual_features[:, 1:, :]
+            
+        image_memory = self.visual_projector(visual_features.float()) # [B, 196 (hoặc 197), D]
         
         # 2. Luồng RAG Text (FiD Logic)
         B, K, L = rag_input_ids.shape
